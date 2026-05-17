@@ -1,6 +1,8 @@
-import { Body, Injectable, Param, ParseIntPipe, Patch } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UsersService } from '../../users/provider/users.service';
 import { CreatePostDto } from '../dtos/create-post.dto';
+import { PatchPostDto } from '../dtos/patch-post.dto';
+import { assertResourceExists } from '../../../common/exceptions/not-found.helper';
 
 @Injectable()
 export class PostsService {
@@ -29,13 +31,12 @@ export class PostsService {
     return post;
   }
 
-  public patchPost(@Param('id', ParseIntPipe) postId: number, @Body() patchPostDto: Partial<CreatePostDto>) {
+  public patchPost(postId: number, patchPostDto: PatchPostDto) {
     const postIndex = this.posts.findIndex((post) => post.id === postId);
-    if (postIndex === -1) {
-      throw new Error('Post not found');
-    }
+    const existingPost = assertResourceExists(this.posts[postIndex], 'Post', postId);
+
     const updatedPost = {
-      ...this.posts[postIndex],
+      ...existingPost,
       ...patchPostDto,
     };
     this.posts[postIndex] = updatedPost;

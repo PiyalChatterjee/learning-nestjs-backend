@@ -264,3 +264,66 @@ findAll(@Query('page') page: number = 1) {
 
 ### Lesson/Topic Context
 - In NestJS, payload contracts should live in DTOs, not comments. Global validation + DTO decorators ensure the API stays consistent with expected request structure.
+
+## 2026-05-18 - Controller decorators used inside service method
+
+### Symptom
+- `PostsService.patchPost(...)` used controller-layer decorators (`@Param`, `@Body`, `ParseIntPipe`) in the service file.
+
+### Root Cause
+- Controller concerns were mixed into service logic, breaking clean NestJS layering.
+
+### Change Made
+- Updated `src/modules/posts/provider/posts.service.ts`:
+  - Removed controller-specific imports from `@nestjs/common`.
+  - Changed `patchPost` signature from decorated parameters to plain typed arguments.
+  - Used `PatchPostDto` as method input type.
+
+### Verification
+- Posts unit tests compile and run successfully after refactor.
+
+### Lesson/Topic Context
+- Keep Nest decorators in controllers. Services should stay framework-agnostic and receive plain values/DTOs.
+
+## 2026-05-18 - Reusable not-found handling for posts service
+
+### Symptom
+- Need to throw `Post not found` without repeating custom throw logic in controllers.
+
+### Root Cause
+- Not-found behavior was hardcoded in `PostsService` using `Error`, and there was no reusable helper for other modules.
+
+### Change Made
+- Added shared helper `src/common/exceptions/not-found.helper.ts`:
+  - `assertResourceExists(resource, resourceName, identifier)`
+  - Throws `NotFoundException` with a consistent message format.
+- Updated `src/modules/posts/provider/posts.service.ts`:
+  - Replaced inline throw with `assertResourceExists(...)` inside `patchPost`.
+
+### Verification
+- Posts module unit tests pass.
+- Type checks for updated files report no errors.
+
+### Lesson/Topic Context
+- Centralize common error patterns (like 404 not-found) in reusable helpers to keep controllers/services lean and consistent.
+
+## 2026-05-18 - Reusable not-found handling added to users module
+
+### Symptom
+- Users endpoints did not throw a consistent 404 when a user ID did not exist.
+
+### Root Cause
+- `UsersService` returned hardcoded responses and had no shared not-found assertion flow.
+
+### Change Made
+- Updated `src/modules/users/provider/users.service.ts` to use the shared helper:
+  - Imported `assertResourceExists` from `src/common/exceptions/not-found.helper.ts`.
+  - Added in-memory users store and real ID lookup/update/delete flow.
+  - Applied reusable not-found assertions in `getUserById`, `updateUser`, `patchUser`, and `deleteUser`.
+
+### Verification
+- Users controller/service unit tests pass.
+- No diagnostics in updated users service file.
+
+### Lesson/Topic Context
+- Reusing a shared not-found assertion keeps error responses consistent across modules and avoids duplicated controller logic.
