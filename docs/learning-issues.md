@@ -213,3 +213,26 @@ findAll(@Query('page') page: number = 1) {
 
 ### Learning Note
 - A green build is not always enough; always verify expected output artifacts exist (for example, `dist/main.js`) before running production start.
+
+## 2026-05-18 - Swagger endpoint not found under global prefix path
+
+### Symptom
+- Browser showed `Cannot GET /v1/api` (404) after adding Swagger setup.
+
+### Root Cause
+- Swagger is configured with `SwaggerModule.setup('api', app, document)` in `main.ts`.
+- This exposes docs at `/api`, not `/v1/api`.
+- Global prefix does not automatically change the expected custom Swagger path in this setup.
+
+### Change Made
+- Updated Swagger setup path in `main.ts` from `api-docs` to `api`.
+- Verified the active docs route from the running app.
+
+### Verification
+- `GET /api` returned 200.
+- `GET /v1/api` returned 404.
+- `GET /api-docs` returned 404.
+
+### Lesson/Topic Context
+- Use the exact path passed to `SwaggerModule.setup(...)` when opening Swagger UI.
+- If you want prefixed docs URL behavior, configure Swagger setup options explicitly for global prefix usage.

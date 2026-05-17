@@ -15,6 +15,7 @@ import { CreateUserDto } from './dtos/create-user.dto';
 import { PatchUserDto } from './dtos/patch-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { UsersService } from './provider/users.service';
+import { ApiQuery, ApiTags, ApiBody, ApiParam, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('users')
 export class UsersController {
@@ -68,6 +69,20 @@ export class UsersController {
    */
 
   @Get()
+  @ApiOperation({ summary: 'Get all users with optional pagination' })
+  @ApiResponse({ status: 200, description: 'Successfully retrieved users with pagination' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of users to return per page',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number to return',
+  })
   public getAllUsers(
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
@@ -80,28 +95,78 @@ export class UsersController {
     return this.usersService.getAllUsers(parsedLimit, parsedPage);
   }
   @Get(':id')
+  @ApiOperation({ summary: 'Get a user by ID' })
+  @ApiResponse({ status: 200, description: 'Successfully retrieved user by ID' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    example: 1234,
+    description: 'ID of the user to return',
+  })
   public getUserById(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.getUserById(id);
   }
+
   @Post()
-  public createUser(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.createUser(createUserDto);
+  @ApiOperation({ summary: 'Create a new user' })
+  @ApiResponse({ status: 201, description: 'Successfully created a new user' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiBody({ type: CreateUserDto, description: 'Data transfer object for creating a new user' })
+  public createUser(@Body() dto: CreateUserDto) {
+    return this.usersService.createUser(dto);
   }
+
   @Put(':id')
+  @ApiOperation({ summary: 'Update an existing user' })
+  @ApiResponse({ status: 200, description: 'Successfully updated the user' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiBody({ type: UpdateUserDto, description: 'Data transfer object for updating an existing user' })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    type: Number,
+    example: 1234,
+    description: 'ID of the user to update',
+  })
   public updateUser(
-    @Body() updateUserDto: UpdateUserDto,
+    @Body() dto: UpdateUserDto,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.usersService.updateUser(id, updateUserDto);
+    return this.usersService.updateUser(id, dto);
   }
+  
   @Patch(':id')
+  @ApiOperation({ summary: 'Partially update an existing user' })
+  @ApiResponse({ status: 200, description: 'Successfully partially updated the user' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiBody({ type: PatchUserDto, description: 'Data transfer object for partially updating an existing user' })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    type: Number,
+    example: 1234,
+    description: 'ID of the user to partially update',
+  })
   public partiallyUpdateUser(
-    @Body() partiallyUpdateUserDto: PatchUserDto,
+    @Body() dto: PatchUserDto,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.usersService.patchUser(id, partiallyUpdateUserDto);
+    return this.usersService.patchUser(id, dto);
   }
+  
   @Delete(':id')
+  @ApiOperation({ summary: 'Delete an existing user' })
+  @ApiResponse({ status: 200, description: 'Successfully deleted the user' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    example: 1234,
+    description: 'ID of the user to delete',
+  })
   public deleteUser(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.deleteUser(id);
   }
