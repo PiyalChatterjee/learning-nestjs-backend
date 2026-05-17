@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Body, Injectable, Param, ParseIntPipe, Patch } from '@nestjs/common';
 import { UsersService } from '../../users/provider/users.service';
 import { CreatePostDto } from '../dtos/create-post.dto';
 
@@ -27,5 +27,18 @@ export class PostsService {
 
     this.posts.push(post);
     return post;
+  }
+
+  public patchPost(@Param('id', ParseIntPipe) postId: number, @Body() patchPostDto: Partial<CreatePostDto>) {
+    const postIndex = this.posts.findIndex((post) => post.id === postId);
+    if (postIndex === -1) {
+      throw new Error('Post not found');
+    }
+    const updatedPost = {
+      ...this.posts[postIndex],
+      ...patchPostDto,
+    };
+    this.posts[postIndex] = updatedPost;
+    return updatedPost;
   }
 }

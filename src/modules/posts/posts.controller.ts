@@ -1,8 +1,9 @@
-import { Body, Controller, Get, ParseIntPipe, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { PostsService } from './provider/posts.service';
 import { UsersService } from '../users/provider/users.service';
-import { ApiBody, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { CreatePostDto } from './dtos/create-post.dto';
+import { PatchPostDto } from './dtos/patch-post.dto';
 
 @Controller('posts')
 export class PostsController {
@@ -33,5 +34,19 @@ export class PostsController {
   @ApiBody({ type: CreatePostDto })
   public createPost(@Body() createPostDto: CreatePostDto) {
     return this.postsService.createPost(createPostDto);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update a post', description: 'Update an existing post by its ID' })
+  @ApiResponse({ status: 200, description: 'Post updated successfully' })
+  @ApiResponse({ status: 404, description: 'Post not found' })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'ID of the post to update',
+  })
+  @ApiBody({ type: PatchPostDto, description: 'Data transfer object for updating a post' })
+  public updatePost(@Param('id', ParseIntPipe) postId: number, @Body() patchPostDto: PatchPostDto) {
+    return this.postsService.patchPost(postId, patchPostDto);
   }
 }

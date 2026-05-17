@@ -1,0 +1,25 @@
+PATCH http://localhost:8000/v1/posts/1
+Content-Type: application/json
+
+{
+  "title": "Getting started with NestJS - Updated",
+  "postType": "post",
+  "slug": "getting-started-with-nestjs-updated",
+  "status": "published",
+  "content": "This is the updated full content of the post.",
+  "schema": "article",
+  "featuredImageUrl": "https://example.com/images/post-cover-updated.png",
+  "publishOn": "2026-06-15T10:00:00.000Z",
+  "tags": [
+    "nestjs",
+    "backend",
+    "typescript",
+    "update"
+  ],
+  "metaOptions": [
+    {
+      "key": "canonicalUrl",
+      "value": "https://example.com/posts/getting-started-with-nestjs-updated"
+    }
+  ]
+}

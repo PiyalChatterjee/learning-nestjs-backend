@@ -1,21 +1,23 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import {
   IsArray,
   IsDate,
   IsEnum,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   IsUrl,
   ValidateNested,
 } from 'class-validator';
+import { CreatePostDto } from './create-post.dto';
+import { Type } from 'class-transformer';
 import { PostStatus } from '../enums/post-status.enum';
 import { PostType } from '../enums/post-type.enum';
 import { PostMetaOptionDto } from './post-meta-options.dto';
 
-export class CreatePostDto {
-  @ApiProperty({
+export class PatchPostDto extends PartialType(CreatePostDto) {
+  @ApiPropertyOptional({
     description: 'Title of the post',
     example: 'Getting started with NestJS',
   })
@@ -23,7 +25,7 @@ export class CreatePostDto {
   @IsNotEmpty()
   title: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Type of post content',
     enum: PostType,
     example: PostType.POST,
@@ -31,7 +33,7 @@ export class CreatePostDto {
   @IsEnum(PostType)
   postType: PostType;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'URL-friendly unique slug',
     example: 'getting-started-with-nestjs',
   })
@@ -39,7 +41,7 @@ export class CreatePostDto {
   @IsNotEmpty()
   slug: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Publishing lifecycle status',
     enum: PostStatus,
     example: PostStatus.DRAFT,
@@ -71,24 +73,26 @@ export class CreatePostDto {
   @IsUrl()
   featuredImageUrl?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Scheduled publish date',
     example: '2026-06-01T10:00:00.000Z',
   })
   @Type(() => Date)
   @IsDate()
-  publishOn: Date;
+  @IsOptional()
+  publishOn?: Date;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'List of tags associated with the post',
     type: [String],
     example: ['nestjs', 'backend', 'typescript'],
   })
   @IsArray()
   @IsString({ each: true })
-  tags: string[];
+  @IsOptional()
+  tags?: string[];
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Additional metadata options',
     type: [PostMetaOptionDto],
     example: [
@@ -101,5 +105,6 @@ export class CreatePostDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PostMetaOptionDto)
-  metaOptions: PostMetaOptionDto[];
+  @IsOptional()
+  metaOptions?: PostMetaOptionDto[];
 }
