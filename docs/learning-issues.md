@@ -85,6 +85,38 @@ When you log the `app` object in `main.ts`, here is what the key fields mean:
 
 - One-line summary: Nest's internal plumbing module — always present, globally available, powers core features like DI, routing, and configuration.
 
+### Query Params: Pipes vs ES Defaults + Type Annotations
+
+Use this route as an example:
+
+```ts
+@Get()
+findAll(
+  @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+) {}
+```
+
+| Approach | What it does | Runtime safety |
+|---|---|---|
+| `DefaultValuePipe(1)` | If `page` is missing/undefined, injects `1` | Yes (Nest runtime) |
+| `ParseIntPipe` | Converts string input (for example `'2'`) to number `2`; rejects invalid values | Yes (throws 400 for bad input) |
+| `page = 1` (ES default) | Default only in JS function logic | No validation/conversion |
+| `page: number` (TS type) | Compile-time type hint/check | No runtime effect |
+
+- Key rule: HTTP query params arrive as strings at runtime, even if TypeScript says `number`.
+- `page: number = 1` does not parse `'2'` to `2` and does not reject `'abc'`.
+- `DefaultValuePipe + ParseIntPipe` gives both defaulting and safe runtime conversion/validation.
+- Use ES defaults/types for developer clarity, and use pipes for actual request data safety.
+
+Example of the risky version:
+
+```ts
+@Get()
+findAll(@Query('page') page: number = 1) {
+  // page can still be a string at runtime without ParseIntPipe
+}
+```
+
 ## 2026-05-17 - Jest globals not recognized in spec files
 
 ### Symptom
@@ -108,6 +140,53 @@ When you log the `app` object in `main.ts`, here is what the key fields mean:
 ### Lesson/Topic Context
 - When using `module: node16`, always explicitly declare test runner types in `tsconfig.json` via `"types": ["jest"]`.
 - `@types/jest` installed alone is not enough — TypeScript needs `"types"` to include it.
+
+## 2026-05-17 - Stale DTO diagnostics after filename mismatch
+
+### Symptom
+- Editor showed many decorator/type errors for `create-user.dtos.ts`, including:
+  - `Unable to resolve signature of property decorator...`
+  - `Property 'x' has no initializer...`
+
+### Root Cause
+- Diagnostics were attached to a non-existent/old filename (`create-user.dtos.ts`) while current project file is `create-user.dto.ts`.
+- Language service state was stale relative to current file structure.
+
+### Change Made
+- Verified actual files used by controller imports and checked diagnostics directly on:
+  - `src/modules/users/dtos/create-user.dto.ts`
+  - `src/modules/users/dtos/update-user.dto.ts`
+  - `src/modules/users/users.controller.ts`
+- No code changes required for DTO validation decorators.
+
+### Verification
+- Workspace diagnostics report `No errors found` for all active users module DTO/controller files.
+
+### Lesson/Topic Context
+- If errors reference a filename that no longer exists, first verify real file paths and imports before changing code.
+- Stale language service diagnostics can mimic config/decorator failures.
+
+## 2026-05-17 - UsersController spec failed after service injection
+
+### Symptom
+- `UsersController` unit test failed to compile testing module after adding constructor injection.
+
+### Root Cause
+- `UsersController` now depends on `UsersService`, but `users.controller.spec.ts` did not provide `UsersService` in the testing module.
+
+### Change Made
+- Updated `src/modules/users/users.controller.spec.ts`:
+  - Imported `UsersService`.
+  - Added a provider mock:
+    - `{ provide: UsersService, useValue: {} }`
+
+### Verification
+- Ran the users controller spec file.
+- Result: 1 passed, 0 failed.
+
+### Lesson/Topic Context
+- In NestJS unit tests, every constructor-injected dependency must be provided in `Test.createTestingModule(...)`.
+- Use a lightweight mock (`useValue`) when behavior is not under test.
 
 ## 2026-05-16 - Build succeeded but dist output missing
 
