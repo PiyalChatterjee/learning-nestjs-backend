@@ -1,5 +1,8 @@
 import { NotFoundException } from '@nestjs/common';
 
+/**
+ * Ensures a resource exists and throws a 404 error when it does not.
+ */
 export function assertResourceExists<T>(
   resource: T | null | undefined,
   resourceName: string,

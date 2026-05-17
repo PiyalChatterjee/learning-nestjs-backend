@@ -17,6 +17,9 @@ import { UpdateUserDto } from './dtos/update-user.dto';
 import { UsersService } from './provider/users.service';
 import { ApiQuery, ApiTags, ApiBody, ApiParam, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
+/**
+ * Exposes user management endpoints.
+ */
 @Controller('users')
 export class UsersController {
   // Inject UsersService to handle business logic
@@ -68,6 +71,9 @@ export class UsersController {
    * // }
    */
 
+  /**
+   * Returns paginated users.
+   */
   @Get()
   @ApiOperation({ summary: 'Get all users with optional pagination' })
   @ApiResponse({ status: 200, description: 'Successfully retrieved users with pagination' })
@@ -94,6 +100,10 @@ export class UsersController {
     );
     return this.usersService.getAllUsers(parsedLimit, parsedPage);
   }
+
+  /**
+   * Returns a single user by id.
+   */
   @Get(':id')
   @ApiOperation({ summary: 'Get a user by ID' })
   @ApiResponse({ status: 200, description: 'Successfully retrieved user by ID' })
@@ -108,6 +118,9 @@ export class UsersController {
     return this.usersService.getUserById(id);
   }
 
+  /**
+   * Creates a new user.
+   */
   @Post()
   @ApiOperation({ summary: 'Create a new user' })
   @ApiResponse({ status: 201, description: 'Successfully created a new user' })
@@ -117,6 +130,9 @@ export class UsersController {
     return this.usersService.createUser(dto);
   }
 
+  /**
+   * Replaces user fields with a full update payload.
+   */
   @Put(':id')
   @ApiOperation({ summary: 'Update an existing user' })
   @ApiResponse({ status: 200, description: 'Successfully updated the user' })
@@ -137,6 +153,9 @@ export class UsersController {
     return this.usersService.updateUser(id, dto);
   }
   
+  /**
+   * Applies partial updates to a user.
+   */
   @Patch(':id')
   @ApiOperation({ summary: 'Partially update an existing user' })
   @ApiResponse({ status: 200, description: 'Successfully partially updated the user' })
@@ -157,6 +176,9 @@ export class UsersController {
     return this.usersService.patchUser(id, dto);
   }
   
+  /**
+   * Deletes a user by id.
+   */
   @Delete(':id')
   @ApiOperation({ summary: 'Delete an existing user' })
   @ApiResponse({ status: 200, description: 'Successfully deleted the user' })

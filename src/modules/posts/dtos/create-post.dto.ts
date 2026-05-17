@@ -14,7 +14,13 @@ import { PostStatus } from '../enums/post-status.enum';
 import { PostType } from '../enums/post-type.enum';
 import { PostMetaOptionDto } from './post-meta-options.dto';
 
+/**
+ * Represents the payload required to create a post.
+ */
 export class CreatePostDto {
+  /**
+   * Human-readable post title.
+   */
   @ApiProperty({
     description: 'Title of the post',
     example: 'Getting started with NestJS',
@@ -23,6 +29,9 @@ export class CreatePostDto {
   @IsNotEmpty()
   title: string;
 
+  /**
+   * Classification of the post content.
+   */
   @ApiProperty({
     description: 'Type of post content',
     enum: PostType,
@@ -31,6 +40,9 @@ export class CreatePostDto {
   @IsEnum(PostType)
   postType: PostType;
 
+  /**
+   * URL-friendly unique identifier for the post.
+   */
   @ApiProperty({
     description: 'URL-friendly unique slug',
     example: 'getting-started-with-nestjs',
@@ -39,6 +51,9 @@ export class CreatePostDto {
   @IsNotEmpty()
   slug: string;
 
+  /**
+   * Workflow status used in publication lifecycle.
+   */
   @ApiProperty({
     description: 'Publishing lifecycle status',
     enum: PostStatus,
@@ -47,6 +62,9 @@ export class CreatePostDto {
   @IsEnum(PostStatus)
   status: PostStatus;
 
+  /**
+   * Optional body content for the post.
+   */
   @ApiPropertyOptional({
     description: 'Post body content',
     example: 'This is the full content of the post.',
@@ -55,6 +73,9 @@ export class CreatePostDto {
   @IsString()
   content?: string;
 
+  /**
+   * Optional schema identifier related to the post.
+   */
   @ApiPropertyOptional({
     description: 'Schema type associated with content',
     example: 'article',
@@ -63,6 +84,9 @@ export class CreatePostDto {
   @IsString()
   schema?: string;
 
+  /**
+   * Optional URL for the featured image.
+   */
   @ApiPropertyOptional({
     description: 'Featured image URL',
     example: 'https://example.com/images/post-cover.png',
@@ -71,6 +95,9 @@ export class CreatePostDto {
   @IsUrl()
   featuredImageUrl?: string;
 
+  /**
+   * Scheduled publish date and time.
+   */
   @ApiProperty({
     description: 'Scheduled publish date',
     example: '2026-06-01T10:00:00.000Z',
@@ -79,6 +106,9 @@ export class CreatePostDto {
   @IsDate()
   publishOn: Date;
 
+  /**
+   * Tags assigned to the post.
+   */
   @ApiProperty({
     description: 'List of tags associated with the post',
     type: [String],
@@ -88,6 +118,9 @@ export class CreatePostDto {
   @IsString({ each: true })
   tags: string[];
 
+  /**
+   * Key-value metadata options for the post.
+   */
   @ApiProperty({
     description: 'Additional metadata options',
     type: [PostMetaOptionDto],

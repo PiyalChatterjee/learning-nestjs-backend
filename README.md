@@ -32,4 +32,3 @@ npm run start:dev
 
 For each lesson you complete in the course, map it to one practical change in this repository and log it in `docs/roadmap.md`.
 Treat this repository as a learning lab: small, verifiable increments over perfect architecture in one shot.
-D

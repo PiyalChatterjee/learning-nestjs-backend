@@ -5,6 +5,9 @@ import { PatchUserDto } from '../dtos/patch-user.dto';
 import { AuthService } from '../../auth/provider/auth.service';
 import { assertResourceExists } from '../../../common/exceptions/not-found.helper';
 
+/**
+ * Internal representation of persisted user data.
+ */
 type UserRecord = {
   id: number;
   firstName: string;
@@ -12,8 +15,14 @@ type UserRecord = {
   email: string;
 };
 
+/**
+ * Manages user CRUD behavior for the module.
+ */
 @Injectable()
 export class UsersService {
+  /**
+   * In-memory users collection for local learning scenarios.
+   */
   private readonly users: UserRecord[] = [
     {
       id: 1,
@@ -30,6 +39,10 @@ export class UsersService {
     @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
   ) {}
+
+  /**
+   * Returns a paginated list of users.
+   */
   public getAllUsers(limit: number, page: number) {
     const isAuthenticated = this.authService.isAuthenticated('SAMPLE_TOKEN');
     if (!isAuthenticated) {
@@ -43,6 +56,9 @@ export class UsersService {
     }));
   }
 
+  /**
+   * Returns one user by id.
+   */
   public getUserById(id: number) {
     const isAuthenticated = this.authService.isAuthenticated('SAMPLE_TOKEN');
     if (!isAuthenticated) {
@@ -62,6 +78,9 @@ export class UsersService {
     };
   }
 
+  /**
+   * Creates a new user record.
+   */
   public createUser(createUserDto: CreateUserDto) {
     const { firstName, lastName, email, password } = createUserDto;
     const user = {
@@ -81,6 +100,9 @@ export class UsersService {
     };
   }
 
+  /**
+   * Replaces a user record with full update values.
+   */
   public updateUser(id: number, updateUserDto: UpdateUserDto) {
     const userIndex = this.users.findIndex((user) => user.id === id);
     const existingUser = assertResourceExists(this.users[userIndex], 'User', id);
@@ -99,6 +121,9 @@ export class UsersService {
     };
   }
 
+  /**
+   * Updates selected fields on a user record.
+   */
   public patchUser(id: number, patchUserDto: PatchUserDto) {
     const userIndex = this.users.findIndex((user) => user.id === id);
     const existingUser = assertResourceExists(this.users[userIndex], 'User', id);
@@ -120,6 +145,9 @@ export class UsersService {
     };
   }
 
+  /**
+   * Removes a user by id.
+   */
   public deleteUser(id: number) {
     const userIndex = this.users.findIndex((user) => user.id === id);
     assertResourceExists(this.users[userIndex], 'User', id);

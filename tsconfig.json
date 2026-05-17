@@ -21,5 +21,7 @@
     "noFallthroughCasesInSwitch": false,
     "types": ["jest"],
 
-  }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["docs/**", "dist", "node_modules"]
 }

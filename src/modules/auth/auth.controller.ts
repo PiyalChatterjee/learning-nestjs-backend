@@ -1,6 +1,9 @@
 import { Controller } from '@nestjs/common';
 import { AuthService } from './provider/auth.service';
 
+/**
+ * Exposes authentication-related HTTP endpoints.
+ */
 @Controller('auth')
 export class AuthController {
   /**

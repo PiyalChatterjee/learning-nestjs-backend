@@ -327,3 +327,63 @@ findAll(@Query('page') page: number = 1) {
 
 ### Lesson/Topic Context
 - Reusing a shared not-found assertion keeps error responses consistent across modules and avoids duplicated controller logic.
+
+## 2026-05-18 - Compodoc coverage polluted by docs folder sources
+
+### Symptom
+- Compodoc coverage report showed many uncovered files from `docs/template-playground/**`, even after adding JSDoc in backend source files.
+
+### Root Cause
+- `tsconfig.json` had no `include`/`exclude`, so Compodoc scanned additional `.ts` files outside `src`, including playground files under `docs`.
+- Compodoc output directory was also `docs`, which made documentation workflow noisy.
+
+### Change Made
+- Updated `tsconfig.json`:
+  - Added `"include": ["src/**/*.ts"]`
+  - Added `"exclude": ["docs/**", "dist", "node_modules"]`
+
+### Verification
+- Regenerated Compodoc and confirmed coverage table now reflects backend `src` files, all with documented symbols.
+
+### Lesson/Topic Context
+- Keep TypeScript include/exclude explicit so tooling (Compodoc, linters, analysis) targets intended source scope only.
+
+## 2026-05-18 - Compodoc script mode caused unnecessary watch and server output
+
+### Symptom
+- Running documentation command started a watch server every time, producing extra noise and long-running process behavior when only static generation was needed.
+
+### Root Cause
+- `package.json` had a single `doc` script using `-s --watch`, which combines serve and watch with generation.
+
+### Change Made
+- Updated `package.json` scripts:
+  - `doc`: one-time static generation
+  - `doc:serve`: serve generated docs
+  - `doc:watch`: serve with watch mode
+
+### Verification
+- Script definitions now support explicit mode selection for build versus serve/watch workflows.
+
+### Lesson/Topic Context
+- Keep documentation scripts separated by intent so automation and local preview use the appropriate command.
+
+## 2026-05-18 - Generated Compodoc files mixed with handwritten docs folder
+
+### Symptom
+- Generated Compodoc assets appeared under `docs/`, mixing with handwritten learning markdown files and creating noisy git changes.
+
+### Root Cause
+- Documentation scripts output target was `./docs`, which is also used for tracked project notes.
+- Generated output directory was not isolated in `.gitignore`.
+
+### Change Made
+- Updated `package.json` docs scripts to output to `./.compodoc` instead of `./docs`.
+- Added `.compodoc/` to `.gitignore`.
+
+### Verification
+- Running `npm run doc` now generates output in `.compodoc`.
+- Handwritten files under `docs/` remain separate from generated artifacts.
+
+### Lesson/Topic Context
+- Keep generated documentation output in a dedicated ignored directory so source notes and generated assets do not collide.

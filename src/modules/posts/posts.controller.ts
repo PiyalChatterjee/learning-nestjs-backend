@@ -5,6 +5,9 @@ import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/
 import { CreatePostDto } from './dtos/create-post.dto';
 import { PatchPostDto } from './dtos/patch-post.dto';
 
+/**
+ * Handles HTTP routes for post retrieval and mutation.
+ */
 @Controller('posts')
 export class PostsController {
   /**
@@ -15,6 +18,9 @@ export class PostsController {
     private readonly usersService: UsersService,
   ) {}
 
+  /**
+   * Returns all posts for a given user id.
+   */
   @Get()
   @ApiOperation({ summary: 'Get all posts for a specific user', description: 'Fetch all posts associated with a given user ID' })
   @ApiResponse({ status: 200, description: 'Successfully retrieved posts for the user' })
@@ -28,6 +34,9 @@ export class PostsController {
     return this.postsService.getAllPosts(userId);
   }
 
+  /**
+   * Creates a new post from the provided payload.
+   */
   @Post()
   @ApiOperation({ summary: 'Create a new post', description: 'Create a new post using the required structure' })
   @ApiResponse({ status: 201, description: 'Post created successfully' })
@@ -36,6 +45,9 @@ export class PostsController {
     return this.postsService.createPost(createPostDto);
   }
 
+  /**
+   * Applies partial updates to an existing post.
+   */
   @Patch(':id')
   @ApiOperation({ summary: 'Update a post', description: 'Update an existing post by its ID' })
   @ApiResponse({ status: 200, description: 'Post updated successfully' })
