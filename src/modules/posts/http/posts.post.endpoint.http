@@ -1,0 +1,24 @@
+POST http://localhost:8000/v1/posts
+Content-Type: application/json
+
+{
+  "title": "Getting started with NestJS",
+  "postType": "post",
+  "slug": "getting-started-with-nestjs",
+  "status": "draft",
+  "content": "This is the full content of the post.",
+  "schema": "article",
+  "featuredImageUrl": "https://example.com/images/post-cover.png",
+  "publishOn": "2026-06-01T10:00:00.000Z",
+  "tags": [
+    "nestjs",
+    "backend",
+    "typescript"
+  ],
+  "metaOptions": [
+    {
+      "key": "canonicalUrl",
+      "value": "https://example.com/posts/getting-started-with-nestjs"
+    }
+  ]
+}

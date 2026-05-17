@@ -236,3 +236,31 @@ findAll(@Query('page') page: number = 1) {
 ### Lesson/Topic Context
 - Use the exact path passed to `SwaggerModule.setup(...)` when opening Swagger UI.
 - If you want prefixed docs URL behavior, configure Swagger setup options explicitly for global prefix usage.
+
+## 2026-05-18 - Posts request body structure not enforced
+
+### Symptom
+- Posts endpoint did not enforce the expected create payload structure (title, postType, slug, status, optional content/schema/featuredImageUrl, publishOn, tags, metaOptions).
+
+### Root Cause
+- Posts module had no DTO for create payload validation and no create endpoint wired to a typed request body.
+
+### Change Made
+- Added `src/modules/posts/dtos/create-post.dto.ts` with:
+  - `PostType` enum: `post | page | story | series`
+  - `PostStatus` enum: `draft | scheduled | review | published`
+  - Nested `PostMetaOptionDto` for `metaOptions`
+  - Validation decorators for all required/optional fields
+- Updated `src/modules/posts/posts.controller.ts`:
+  - Added `POST /posts` with `@Body()` using `CreatePostDto`
+  - Corrected `GET /posts` user ID source from route param to query param
+- Updated `src/modules/posts/provider/posts.service.ts`:
+  - Added in-memory post storage typed from `CreatePostDto`
+  - Added `createPost()` and updated `getAllPosts()` to return stored posts
+
+### Verification
+- Global `ValidationPipe` in `src/main.ts` already uses `whitelist`, `transform`, and `forbidNonWhitelisted`, so the new DTO constraints are enforced at runtime.
+- Project compiles/tests for posts module continue to load with the updated controller/service signatures.
+
+### Lesson/Topic Context
+- In NestJS, payload contracts should live in DTOs, not comments. Global validation + DTO decorators ensure the API stays consistent with expected request structure.
