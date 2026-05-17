@@ -114,3 +114,6 @@ dist
 
 # macOS
 .DS_Store
+
+# GitHub
+.github
