@@ -1,5 +1,8 @@
 import { Check, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
+/**
+ * User persistence model mapped to the users table.
+ */
 @Entity()
 @Check(
   'CHK_user_email_format',
@@ -10,12 +13,18 @@ import { Check, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
   `length("password") BETWEEN 8 AND 64 AND "password" ~ '[A-Z]' AND "password" ~ '[a-z]' AND "password" ~ '[0-9]' AND "password" ~ '[^A-Za-z0-9]'`,
 )
 export class User {
+  /**
+   * Primary key for the user record.
+   */
   @PrimaryGeneratedColumn({
     type: 'integer',
     name: 'id',
   })
   id: number;
 
+  /**
+   * User first name.
+   */
   @Column({
     type: 'varchar',
     length: 96,
@@ -23,6 +32,9 @@ export class User {
   })
   firstName: string;
 
+  /**
+   * Optional user last name.
+   */
   @Column({
     type: 'varchar',
     length: 96,
@@ -31,6 +43,9 @@ export class User {
   })
   lastName: string | null;
 
+  /**
+   * Unique email address used for account identity.
+   */
   @Column({
     type: 'varchar',
     length: 255,
@@ -39,6 +54,9 @@ export class User {
   })
   email: string;
 
+  /**
+   * Password hash or password value used during learning flow.
+   */
   @Column({
     type: 'varchar',
     length: 64,

@@ -2,11 +2,21 @@ import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 't
 import { PostStatus } from './enums/post-status.enum';
 import { PostType } from './enums/post-type.enum';
 import { User } from '../users/user.entity';
+
+/**
+ * Post persistence model mapped to the posts table.
+ */
 @Entity()
 export class Post {
+  /**
+   * Primary key for the post record.
+   */
   @PrimaryGeneratedColumn()
   id: number;
 
+  /**
+   * Human-readable title of the post.
+   */
   @Column({
     type: 'varchar',
     length: 512,
@@ -14,6 +24,9 @@ export class Post {
   })
   title: string;
 
+  /**
+   * Classification of post content.
+   */
   @Column({
     type: 'enum',
     enum: PostType,
@@ -21,6 +34,9 @@ export class Post {
   })
   postType: PostType;
 
+  /**
+   * URL-friendly unique slug.
+   */
   @Column({
     type: 'varchar',
     length: 256,
@@ -29,6 +45,9 @@ export class Post {
   })
   slug: string;
 
+  /**
+   * Publishing lifecycle status.
+   */
   @Column({
     type: 'enum',
     enum: PostStatus,
@@ -37,18 +56,27 @@ export class Post {
   })
   status: PostStatus;
 
+  /**
+   * Optional full content body.
+   */
   @Column({
     type: 'text',
     nullable: true,
   })
   content: string | null;
 
+  /**
+   * Optional schema label for structured content.
+   */
   @Column({
     type: 'text',
     nullable: true,
   })
   schema: string | null;
 
+  /**
+   * Optional featured image URL.
+   */
   @Column({
     type: 'varchar',
     length: 1024,
@@ -57,6 +85,9 @@ export class Post {
   })
   featuredImageUrl: string | null;
 
+  /**
+   * Optional scheduled publication timestamp.
+   */
   @Column({
     type: 'timestamptz',
     nullable: true,
@@ -64,6 +95,9 @@ export class Post {
   })
   publishOn: Date | null;
 
+  /**
+   * Optional list of tag labels.
+   */
   @Column({
     type: 'varchar',
     array: true,
@@ -71,6 +105,9 @@ export class Post {
   })
   tags: string[];
 
+  /**
+   * Optional metadata map persisted as JSON.
+   */
   @Column({
     type: 'jsonb',
     nullable: true,
@@ -78,6 +115,9 @@ export class Post {
   })
   metaOptions: Record<string, string>[];
 
+  /**
+   * User who authored the post.
+   */
   @ManyToOne(() => User, { nullable: false, eager: false })
   @JoinColumn({ name: 'author_id' })
   author: User;

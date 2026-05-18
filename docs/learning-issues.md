@@ -446,3 +446,23 @@ findAll(@Query('page') page: number = 1) {
 
 ### Lesson/Topic Context
 - Keep generated documentation output in a dedicated ignored directory so source notes and generated assets do not collide.
+
+## 2026-05-19 - Low Compodoc coverage for entity files
+
+### Symptom
+- Compodoc coverage reported low documentation coverage for entity files.
+
+### Root Cause
+- Entity classes and properties in users/posts had little or no JSDoc, so Compodoc counted many undocumented symbols.
+
+### Change Made
+- Updated `src/modules/users/user.entity.ts`:
+  - Added JSDoc for `User` class and all entity fields.
+- Updated `src/modules/posts/post.entity.ts`:
+  - Added JSDoc for `Post` class and all entity fields, including relation field.
+
+### Verification
+- Ran `npm run build` successfully with no compile errors after documentation updates.
+
+### Lesson/Topic Context
+- Compodoc coverage increases when both class-level and property-level JSDoc comments are present, especially in entity models that define many exported members.
