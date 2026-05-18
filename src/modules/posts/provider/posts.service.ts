@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePostDto } from '../dtos/create-post.dto';
 import { PatchPostDto } from '../dtos/patch-post.dto';
+import { UpdatePostDto } from '../dtos/update-post.dto';
 import { assertResourceExists } from '../../../common/exceptions/not-found.helper';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Post } from '../post.entity';
@@ -38,6 +39,23 @@ export class PostsService {
   }
 
   /**
+   * Returns one post by id.
+   */
+  public async getPostById(postId: number) {
+    // fetch the post or throw 404 if not found
+    const post = assertResourceExists(
+      await this.postRepository.findOne({
+        where: { id: postId },
+        relations: ['author'],
+      }),
+      'Post',
+      postId,
+    );
+
+    return formatPostWithAuthor(post);
+  }
+
+  /**
    * Creates and stores a new post.
    */
   public async createPost(createPostDto: CreatePostDto) {
@@ -53,25 +71,45 @@ export class PostsService {
 
     // extract authorEmail from DTO and transform metaOptions to Record format
     const { authorEmail, metaOptions, ...postData } = createPostDto;
-    const transformedMetaOptions = metaOptions.reduce(
-      (acc, opt) => {
-        acc[opt.key] = opt.value;
-        return acc;
-      },
-      {} as Record<string, string>,
-    );
+    const transformedMetaOptions = this.transformMetaOptions(metaOptions);
 
     // create post with author relation and transformed meta options
     const post = this.postRepository.create({
       ...postData,
       author,
-      metaOptions: [transformedMetaOptions],
+      metaOptions: transformedMetaOptions,
     });
 
     // persist the post to the database
     await this.postRepository.save(post);
 
     // return formatted response with author details
+    return formatPostWithAuthor(post);
+  }
+
+  /**
+   * Replaces an existing post with a full payload.
+   */
+  public async updatePost(postId: number, updatePostDto: UpdatePostDto) {
+    // fetch the post or throw 404 if not found
+    const post = assertResourceExists(
+      await this.postRepository.findOne({
+        where: { id: postId },
+        relations: ['author'],
+      }),
+      'Post',
+      postId,
+    );
+
+    // replace all mutable fields from full update payload
+    const { metaOptions, ...postData } = updatePostDto;
+    Object.assign(post, {
+      ...postData,
+      metaOptions: this.transformMetaOptions(metaOptions),
+    });
+
+    await this.postRepository.save(post);
+
     return formatPostWithAuthor(post);
   }
 
@@ -91,6 +129,12 @@ export class PostsService {
       Object.entries(patchPostDto).filter(([, value]) => value !== undefined),
     );
 
+    if (partialPayload.metaOptions) {
+      partialPayload.metaOptions = this.transformMetaOptions(
+        partialPayload.metaOptions,
+      );
+    }
+
     Object.assign(post, partialPayload);
 
     // persist changes to the database
@@ -102,5 +146,35 @@ export class PostsService {
       relations: ['author'],
     });
     return formatPostWithAuthor(updatedPost);
+  }
+
+  /**
+   * Removes a post by id.
+   */
+  public async deletePost(postId: number) {
+    // fetch the post or throw 404 if not found
+    const post = assertResourceExists(
+      await this.postRepository.findOne({ where: { id: postId } }),
+      'Post',
+      postId,
+    );
+
+    await this.postRepository.remove(post);
+
+    return {
+      message: `Post with id ${postId} deleted successfully`,
+    };
+  }
+
+  private transformMetaOptions(metaOptions: Array<{ key: string; value: string }>) {
+    return [
+      metaOptions.reduce(
+        (acc, option) => {
+          acc[option.key] = option.value;
+          return acc;
+        },
+        {} as Record<string, string>,
+      ),
+    ];
   }
 }

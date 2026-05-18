@@ -258,6 +258,26 @@ findAll(@Query('page') page: number = 1) {
   - Added in-memory post storage typed from `CreatePostDto`
   - Added `createPost()` and updated `getAllPosts()` to return stored posts
 
+## 2026-05-19 - Missing Swagger exception responses in Posts controller
+
+### Symptom
+- Swagger docs for Posts endpoints did not show all failure responses, especially validation and missing-author cases.
+
+### Root Cause
+- `@ApiResponse` decorators in `src/modules/posts/posts.controller.ts` only covered success for create and partially for update.
+
+### Change Made
+- Updated `src/modules/posts/posts.controller.ts`:
+  - Added `@ApiResponse({ status: 400, ... })` and `@ApiResponse({ status: 404, ... })` to `createPost`.
+  - Added `@ApiResponse({ status: 400, ... })` to `updatePost`.
+  - Removed unused controller dependencies/imports (`UsersService`, `Query`, `ApiQuery`) to keep docs/controller aligned.
+
+### Verification
+- Checked file diagnostics for `src/modules/posts/posts.controller.ts`: no errors found.
+
+### Lesson/Topic Context
+- Keep Swagger error responses aligned with actual runtime exceptions (validation, not-found, bad params), not only success cases.
+
 ## 2026-05-18 - Node global `__dirname` not recognized in AppModule
 
 ### Symptom
@@ -358,6 +378,27 @@ findAll(@Query('page') page: number = 1) {
 ### Change Made
 - Updated `tsconfig.json`:
   - Added `"include": ["src/**/*.ts"]`
+
+## 2026-05-19 - Missing Swagger exception responses in Users controller
+
+### Symptom
+- Swagger docs for Users endpoints did not include all error responses for invalid params/query, unauthorized access, and duplicate email cases.
+
+### Root Cause
+- `@ApiResponse` decorators in `src/modules/users/users.controller.ts` covered success cases and some errors, but missed several exceptions handled by pipes/service logic.
+
+### Change Made
+- Updated `src/modules/users/users.controller.ts`:
+  - Added `@ApiResponse({ status: 400, ... })` and `@ApiResponse({ status: 401, ... })` to `getAllUsers`.
+  - Added `@ApiResponse({ status: 400, ... })` and `@ApiResponse({ status: 401, ... })` to `getUserById`.
+  - Added `@ApiResponse({ status: 409, ... })` to `createUser`.
+  - Added `@ApiResponse({ status: 400, ... })` to `deleteUser`.
+
+### Verification
+- Checked file diagnostics for `src/modules/users/users.controller.ts`: no errors found.
+
+### Lesson/Topic Context
+- Keep Swagger response metadata aligned with validation pipes (`ParseIntPipe`, query parsing) and service exceptions (`ConflictException`, auth failures), not only with happy-path responses.
   - Added `"exclude": ["docs/**", "dist", "node_modules"]`
 
 ### Verification

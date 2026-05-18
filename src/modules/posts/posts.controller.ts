@@ -1,9 +1,19 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { PostsService } from './provider/posts.service';
-import { UsersService } from '../users/provider/users.service';
-import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { CreatePostDto } from './dtos/create-post.dto';
 import { PatchPostDto } from './dtos/patch-post.dto';
+import { UpdatePostDto } from './dtos/update-post.dto';
 
 /**
  * Handles HTTP routes for post retrieval and mutation.
@@ -15,7 +25,6 @@ export class PostsController {
    */
   constructor(
     private readonly postsService: PostsService,
-    private readonly usersService: UsersService,
   ) {}
 
   /**
@@ -29,14 +38,54 @@ export class PostsController {
   }
 
   /**
+   * Returns one post by id.
+   */
+  @Get(':id')
+  @ApiOperation({ summary: 'Get post by id', description: 'Fetch one post by its ID' })
+  @ApiResponse({ status: 200, description: 'Successfully retrieved post' })
+  @ApiResponse({ status: 400, description: 'Invalid post id' })
+  @ApiResponse({ status: 404, description: 'Post not found' })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'ID of the post to fetch',
+  })
+  public getPostById(@Param('id', ParseIntPipe) postId: number) {
+    return this.postsService.getPostById(postId);
+  }
+
+  /**
    * Creates a new post from the provided payload.
    */
   @Post()
   @ApiOperation({ summary: 'Create a new post', description: 'Create a new post using the required structure' })
   @ApiResponse({ status: 201, description: 'Post created successfully' })
+  @ApiResponse({ status: 400, description: 'Validation failed for request payload' })
+  @ApiResponse({ status: 404, description: 'Author not found for provided email' })
   @ApiBody({ type: CreatePostDto })
   public createPost(@Body() createPostDto: CreatePostDto) {
     return this.postsService.createPost(createPostDto);
+  }
+
+  /**
+   * Replaces an existing post using a full payload.
+   */
+  @Put(':id')
+  @ApiOperation({ summary: 'Replace a post', description: 'Fully replace an existing post by its ID' })
+  @ApiResponse({ status: 200, description: 'Post replaced successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid post id or request payload' })
+  @ApiResponse({ status: 404, description: 'Post not found' })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'ID of the post to replace',
+  })
+  @ApiBody({ type: UpdatePostDto, description: 'Data transfer object for fully updating a post' })
+  public replacePost(
+    @Param('id', ParseIntPipe) postId: number,
+    @Body() updatePostDto: UpdatePostDto,
+  ) {
+    return this.postsService.updatePost(postId, updatePostDto);
   }
 
   /**
@@ -45,6 +94,7 @@ export class PostsController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update a post', description: 'Update an existing post by its ID' })
   @ApiResponse({ status: 200, description: 'Post updated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid post id or request payload' })
   @ApiResponse({ status: 404, description: 'Post not found' })
   @ApiParam({
     name: 'id',
@@ -54,5 +104,22 @@ export class PostsController {
   @ApiBody({ type: PatchPostDto, description: 'Data transfer object for updating a post' })
   public updatePost(@Param('id', ParseIntPipe) postId: number, @Body() patchPostDto: PatchPostDto) {
     return this.postsService.patchPost(postId, patchPostDto);
+  }
+
+  /**
+   * Deletes a post by id.
+   */
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete a post', description: 'Delete an existing post by its ID' })
+  @ApiResponse({ status: 200, description: 'Post deleted successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid post id' })
+  @ApiResponse({ status: 404, description: 'Post not found' })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'ID of the post to delete',
+  })
+  public deletePost(@Param('id', ParseIntPipe) postId: number) {
+    return this.postsService.deletePost(postId);
   }
 }

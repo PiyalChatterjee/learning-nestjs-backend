@@ -77,6 +77,8 @@ export class UsersController {
   @Get()
   @ApiOperation({ summary: 'Get all users with optional pagination' })
   @ApiResponse({ status: 200, description: 'Successfully retrieved users with pagination' })
+  @ApiResponse({ status: 400, description: 'Invalid pagination query parameters' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiQuery({
     name: 'limit',
     required: false,
@@ -107,6 +109,8 @@ export class UsersController {
   @Get(':id')
   @ApiOperation({ summary: 'Get a user by ID' })
   @ApiResponse({ status: 200, description: 'Successfully retrieved user by ID' })
+  @ApiResponse({ status: 400, description: 'Invalid user id' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'User not found' })
   @ApiParam({
     name: 'id',
@@ -125,6 +129,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Create a new user' })
   @ApiResponse({ status: 201, description: 'Successfully created a new user' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 409, description: 'Email already in use' })
   @ApiBody({ type: CreateUserDto, description: 'Data transfer object for creating a new user' })
   public createUser(@Body() dto: CreateUserDto) {
     return this.usersService.createUser(dto);
@@ -182,6 +187,7 @@ export class UsersController {
   @Delete(':id')
   @ApiOperation({ summary: 'Delete an existing user' })
   @ApiResponse({ status: 200, description: 'Successfully deleted the user' })
+  @ApiResponse({ status: 400, description: 'Invalid user id' })
   @ApiResponse({ status: 404, description: 'User not found' })
   @ApiParam({
     name: 'id',
