@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PostsController } from './posts.controller';
 import { PostsService } from './provider/posts.service';
 import { UsersService } from '../users/provider/users.service';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Post } from './post.entity';
 
 describe('PostsController', () => {
   let controller: PostsController;
@@ -18,6 +20,10 @@ describe('PostsController', () => {
           provide: UsersService,
           useValue: {},
         },
+        {
+          provide: getRepositoryToken(Post),
+          useValue: {},
+        }
       ],
     }).compile();
 

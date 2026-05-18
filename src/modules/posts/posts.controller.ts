@@ -19,19 +19,13 @@ export class PostsController {
   ) {}
 
   /**
-   * Returns all posts for a given user id.
+   * Returns all posts from the database.
    */
   @Get()
-  @ApiOperation({ summary: 'Get all posts for a specific user', description: 'Fetch all posts associated with a given user ID' })
-  @ApiResponse({ status: 200, description: 'Successfully retrieved posts for the user' })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  @ApiQuery({
-    name: 'userId',
-    type: Number,
-    description: 'ID of the user to fetch posts for',
-  })
-  public getAllPosts(@Query('userId', ParseIntPipe) userId: number) {
-    return this.postsService.getAllPosts(userId);
+  @ApiOperation({ summary: 'Get all posts', description: 'Fetch all posts from the database' })
+  @ApiResponse({ status: 200, description: 'Successfully retrieved all posts' })
+  public getAllPosts() {
+    return this.postsService.getAllPosts();
   }
 
   /**

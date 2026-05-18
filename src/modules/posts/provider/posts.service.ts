@@ -1,8 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { UsersService } from '../../users/provider/users.service';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePostDto } from '../dtos/create-post.dto';
 import { PatchPostDto } from '../dtos/patch-post.dto';
 import { assertResourceExists } from '../../../common/exceptions/not-found.helper';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Post } from '../post.entity';
+import { User } from '../../users/user.entity';
+import { Repository } from 'typeorm';
+import { formatPostWithAuthor } from '../../../helpers/format-post-with-author.helper';
 
 /**
  * Manages post data operations.
@@ -10,51 +14,93 @@ import { assertResourceExists } from '../../../common/exceptions/not-found.helpe
 @Injectable()
 export class PostsService {
   /**
-   * In-memory post store for learning purposes.
+   * Inject Post Repository to manage post data persistence and retrieval from the database.
+   * Inject User Repository to look up authors by email when creating posts.
    */
-  private readonly posts: Array<CreatePostDto & { id: number }> = [];
+  constructor(
+    @InjectRepository(Post)
+    private readonly postRepository: Repository<Post>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
 
   /**
-   *Injecting UsersService to fetch user details for the posts
+   * Returns all posts stored in the database.
    */
-  constructor(private readonly usersService: UsersService) {}
+  public async getAllPosts() {
+    // fetch all posts from the database
+    const posts = await this.postRepository.find({
+      relations: ['author'],
+    });
 
-  /**
-   * Returns all stored posts with user information attached.
-   */
-  public getAllPosts(userId: number) {
-    const user = this.usersService.getUserById(userId);
-    return this.posts.map((post) => ({
-      ...post,
-      author: user,
-    }));
+    // format posts with author details
+    return posts.map((post) => formatPostWithAuthor(post));
   }
 
   /**
    * Creates and stores a new post.
    */
-  public createPost(createPostDto: CreatePostDto) {
-    const post = {
-      id: this.posts.length + 1,
-      ...createPostDto,
-    };
+  public async createPost(createPostDto: CreatePostDto) {
+    // look up the author by email
+    const author = await this.userRepository.findOne({
+      where: { email: createPostDto.authorEmail },
+    });
+    if (!author) {
+      throw new NotFoundException(
+        `Author with email ${createPostDto.authorEmail} not found`,
+      );
+    }
 
-    this.posts.push(post);
-    return post;
+    // extract authorEmail from DTO and transform metaOptions to Record format
+    const { authorEmail, metaOptions, ...postData } = createPostDto;
+    const transformedMetaOptions = metaOptions.reduce(
+      (acc, opt) => {
+        acc[opt.key] = opt.value;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+
+    // create post with author relation and transformed meta options
+    const post = this.postRepository.create({
+      ...postData,
+      author,
+      metaOptions: [transformedMetaOptions],
+    });
+
+    // persist the post to the database
+    await this.postRepository.save(post);
+
+    // return formatted response with author details
+    return formatPostWithAuthor(post);
   }
 
   /**
    * Updates an existing post using a partial payload.
    */
-  public patchPost(postId: number, patchPostDto: PatchPostDto) {
-    const postIndex = this.posts.findIndex((post) => post.id === postId);
-    const existingPost = assertResourceExists(this.posts[postIndex], 'Post', postId);
+  public async patchPost(postId: number, patchPostDto: PatchPostDto) {
+    // fetch the post or throw 404 if not found
+    const post = assertResourceExists(
+      await this.postRepository.findOne({ where: { id: postId } }),
+      'Post',
+      postId,
+    );
 
-    const updatedPost = {
-      ...existingPost,
-      ...patchPostDto,
-    };
-    this.posts[postIndex] = updatedPost;
-    return updatedPost;
+    // strip undefined fields and merge partial updates
+    const partialPayload = Object.fromEntries(
+      Object.entries(patchPostDto).filter(([, value]) => value !== undefined),
+    );
+
+    Object.assign(post, partialPayload);
+
+    // persist changes to the database
+    await this.postRepository.save(post);
+
+    // reload author relation and return formatted response
+    const updatedPost = await this.postRepository.findOne({
+      where: { id: post.id },
+      relations: ['author'],
+    });
+    return formatPostWithAuthor(updatedPost);
   }
 }

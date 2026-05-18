@@ -1,9 +1,12 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { ConflictException, forwardRef, Inject, Injectable } from '@nestjs/common';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import { PatchUserDto } from '../dtos/patch-user.dto';
 import { AuthService } from '../../auth/provider/auth.service';
 import { assertResourceExists } from '../../../common/exceptions/not-found.helper';
+import { Repository } from 'typeorm';
+import { User } from '../user.entity';
+import { InjectRepository } from '@nestjs/typeorm';
 
 /**
  * Internal representation of persisted user data.
@@ -34,22 +37,61 @@ export class UsersService {
 
   /**
    * Inject the AuthService into the UsersService using dependency injection. This allows us to use the methods defined in the AuthService to handle authentication-related logic in our user service, such as validating user credentials or checking if a user is authenticated before allowing access to certain user-related operations.
+   * Inject User Repository to manage user data persistence and retrieval from the database. This allows us to perform CRUD operations on user entities using TypeORM's repository pattern, abstracting away the underlying database interactions and providing a clean interface for working with user data in our service.
    */
   constructor(
     @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
+  // Service methods will go here, utilizing authService for authentication checks and userRepository for database operations.
+
+  /**
+   * Creates a new user record.
+   */
+  public async createUser(createUserDto: CreateUserDto) {
+    // check if email already exists
+    const existingUser = await this.userRepository.findOne({
+      where: { email: createUserDto.email },
+    });
+    if (existingUser) {
+      throw new ConflictException('Email already in use');
+    }
+
+    // configure the user entity 
+    const { firstName, lastName, email, password } = createUserDto;
+    const user = this.userRepository.create({
+      firstName,
+      lastName,
+      email,
+      password,
+    });
+
+    // save the user to the database
+    await this.userRepository.save(user);
+    return user;
+  }
 
   /**
    * Returns a paginated list of users.
    */
-  public getAllUsers(limit: number, page: number) {
+  public async getAllUsers(limit: number, page: number) {
+    // verify the caller is authenticated
     const isAuthenticated = this.authService.isAuthenticated('SAMPLE_TOKEN');
     if (!isAuthenticated) {
       throw new Error('Unauthorized');
     }
+
+    // calculate pagination offset and fetch the page from the database
     const offset = (page - 1) * limit;
-    return this.users.slice(offset, offset + limit).map((user) => ({
+    const users = await this.userRepository.find({
+      skip: offset,
+      take: limit,
+    });
+
+    // shape and return the response
+    return users.map((user) => ({
       id: user.id,
       name: `${user.firstName} ${user.lastName ?? ''}`.trim(),
       email: user.email,
@@ -59,18 +101,21 @@ export class UsersService {
   /**
    * Returns one user by id.
    */
-  public getUserById(id: number) {
+  public async getUserById(id: number) {
+    // verify the caller is authenticated
     const isAuthenticated = this.authService.isAuthenticated('SAMPLE_TOKEN');
     if (!isAuthenticated) {
       throw new Error('Unauthorized');
     }
 
+    // fetch the user or throw 404 if not found
     const user = assertResourceExists(
-      this.users.find((entry) => entry.id === id),
+      await this.userRepository.findOne({ where: { id } }),
       'User',
       id,
     );
 
+    // shape and return the response
     return {
       id: user.id,
       name: `${user.firstName} ${user.lastName ?? ''}`.trim(),
@@ -79,79 +124,70 @@ export class UsersService {
   }
 
   /**
-   * Creates a new user record.
-   */
-  public createUser(createUserDto: CreateUserDto) {
-    const { firstName, lastName, email, password } = createUserDto;
-    const user = {
-      id: this.users.length + 1,
-      firstName,
-      lastName,
-      email,
-    };
-
-    this.users.push(user);
-
-    return {
-      id: user.id,
-      name: `${firstName} ${lastName ?? ''}`.trim(),
-      email,
-      password,
-    };
-  }
-
-  /**
    * Replaces a user record with full update values.
    */
-  public updateUser(id: number, updateUserDto: UpdateUserDto) {
-    const userIndex = this.users.findIndex((user) => user.id === id);
-    const existingUser = assertResourceExists(this.users[userIndex], 'User', id);
-    const { firstName, lastName, email } = updateUserDto;
-    this.users[userIndex] = {
-      ...existingUser,
-      firstName,
-      lastName,
-      email,
-    };
-
-    return {
+  public async updateUser(id: number, updateUserDto: UpdateUserDto) {
+    // fetch the user or throw 404 if not found
+    const user = assertResourceExists(
+      await this.userRepository.findOne({ where: { id } }),
+      'User',
       id,
-      name: `${firstName} ${lastName}`,
-      email,
+    );
+
+    // apply all fields from the update payload
+    const { firstName, lastName, email } = updateUserDto;
+    user.firstName = firstName;
+    user.lastName = lastName;
+    user.email = email;
+
+    // persist changes and return the updated record
+    await this.userRepository.save(user);
+    return {
+      id: user.id,
+      name: `${user.firstName} ${user.lastName ?? ''}`.trim(),
+      email: user.email,
     };
   }
 
   /**
    * Updates selected fields on a user record.
    */
-  public patchUser(id: number, patchUserDto: PatchUserDto) {
-    const userIndex = this.users.findIndex((user) => user.id === id);
-    const existingUser = assertResourceExists(this.users[userIndex], 'User', id);
+  public async patchUser(id: number, patchUserDto: PatchUserDto) {
+    // fetch the user or throw 404 if not found
+    const user = assertResourceExists(
+      await this.userRepository.findOne({ where: { id } }),
+      'User',
+      id,
+    );
+
+    // strip undefined fields so only provided values are applied
     const partialPayload = Object.fromEntries(
       Object.entries(patchUserDto).filter(([, value]) => value !== undefined),
     );
 
-    this.users[userIndex] = {
-      ...existingUser,
-      ...partialPayload,
-    };
-
-    const patchedUser = this.users[userIndex];
-
+    // merge partial fields and persist the updated record
+    Object.assign(user, partialPayload);
+    await this.userRepository.save(user);
     return {
-      id: patchedUser.id,
-      name: `${patchedUser.firstName} ${patchedUser.lastName ?? ''}`.trim(),
-      email: patchedUser.email,
+      id: user.id,
+      name: `${user.firstName} ${user.lastName ?? ''}`.trim(),
+      email: user.email,
     };
   }
 
   /**
    * Removes a user by id.
    */
-  public deleteUser(id: number) {
-    const userIndex = this.users.findIndex((user) => user.id === id);
-    assertResourceExists(this.users[userIndex], 'User', id);
-    this.users.splice(userIndex, 1);
+  public async deleteUser(id: number) {
+    // fetch the user or throw 404 if not found
+    const user = assertResourceExists(
+      await this.userRepository.findOne({ where: { id } }),
+      'User',
+      id,
+    );
+
+    // remove the record from the database
+    await this.userRepository.remove(user);
 
     return {
       message: `User with id ${id} deleted successfully`,

@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsDate,
+  IsEmail,
   IsEnum,
   IsNotEmpty,
   IsOptional,
@@ -135,4 +136,15 @@ export class CreatePostDto {
   @ValidateNested({ each: true })
   @Type(() => PostMetaOptionDto)
   metaOptions: PostMetaOptionDto[];
+
+  /**
+   * Email of the user authoring this post.
+   */
+  @ApiProperty({
+    description: 'Email address of the post author',
+    example: 'john.doe@example.com',
+  })
+  @IsEmail()
+  @IsNotEmpty()
+  authorEmail: string;
 }
