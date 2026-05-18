@@ -258,6 +258,24 @@ findAll(@Query('page') page: number = 1) {
   - Added in-memory post storage typed from `CreatePostDto`
   - Added `createPost()` and updated `getAllPosts()` to return stored posts
 
+## 2026-05-18 - Node global `__dirname` not recognized in AppModule
+
+### Symptom
+- TypeScript error in `src/app.module.ts`: `Cannot find name '__dirname'`.
+
+### Root Cause
+- `tsconfig.json` set `compilerOptions.types` to only `"jest"`, which excludes Node global type declarations.
+
+### Change Made
+- Updated `tsconfig.json` to include Node types:
+  - `"types": ["node", "jest"]`
+
+### Verification
+- Re-ran diagnostics for `src/app.module.ts`; no errors remained.
+
+### Lesson/Topic Context
+- If `compilerOptions.types` is explicitly set, include every runtime/testing environment you rely on (for Nest apps, usually both `node` and `jest`).
+
 ### Verification
 - Global `ValidationPipe` in `src/main.ts` already uses `whitelist`, `transform`, and `forbidNonWhitelisted`, so the new DTO constraints are enforced at runtime.
 - Project compiles/tests for posts module continue to load with the updated controller/service signatures.
