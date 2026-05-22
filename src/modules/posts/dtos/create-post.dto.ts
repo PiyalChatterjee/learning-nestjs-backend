@@ -13,7 +13,7 @@ import {
 } from 'class-validator';
 import { PostStatus } from '../enums/post-status.enum';
 import { PostType } from '../enums/post-type.enum';
-import { PostMetaOptionDto } from './post-meta-options.dto';
+import { PostMetaOptionDto } from '../../meta-options/dtos/post-meta-options.dto';
 
 /**
  * Represents the payload required to create a post.
@@ -120,22 +120,19 @@ export class CreatePostDto {
   tags: string[];
 
   /**
-   * Key-value metadata options for the post.
+   * Optional metadata for the post stored as a JSON string.
    */
-  @ApiProperty({
-    description: 'Additional metadata options',
-    type: [PostMetaOptionDto],
-    example: [
-      {
-        key: 'canonicalUrl',
-        value: 'https://example.com/posts/getting-started-with-nestjs',
-      },
-    ],
+  @ApiPropertyOptional({
+    description: 'Additional metadata as a JSON string',
+    type: PostMetaOptionDto,
+    example: {
+      metaValue: '{"canonicalUrl": "https://example.com/posts/getting-started-with-nestjs"}',
+    },
   })
-  @IsArray()
-  @ValidateNested({ each: true })
+  @IsOptional()
+  @ValidateNested()
   @Type(() => PostMetaOptionDto)
-  metaOptions: PostMetaOptionDto[];
+  metaOption?: PostMetaOptionDto;
 
   /**
    * Email of the user authoring this post.

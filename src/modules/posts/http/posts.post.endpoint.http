@@ -15,10 +15,8 @@ Content-Type: application/json
     "backend",
     "typescript"
   ],
-  "metaOptions": [
-    {
-      "key": "canonicalUrl",
-      "value": "https://example.com/posts/getting-started-with-nestjs"
-    }
-  ]
+  "metaOption": {
+    "metaValue": "{\"canonicalUrl\": \"https://example.com/posts/getting-started-with-nestjs\"}"
+  },
+  "authorEmail": "john.doe@example.com"
 }

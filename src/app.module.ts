@@ -7,6 +7,8 @@ import { PostsModule } from './modules/posts/posts.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TagsModule } from './modules/tags/tags.module';
+import { MetaOptionsModule } from './modules/meta-options/meta-options.module';
 
 /**
  * Root application module that wires feature modules and infrastructure.
@@ -20,6 +22,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     UsersModule,
     PostsModule,
     AuthModule,
+    TagsModule,
+    MetaOptionsModule,
+    // Asynchronously configures TypeORM using environment variables.
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       // Builds TypeORM options from environment variables.
@@ -30,8 +35,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         username: configService.get<string>('DB_USERNAME', 'postgres'),
         password: configService.get<string>('DB_PASSWORD', 'admin123'),
         database: configService.get<string>('DB_NAME', 'pip_learning_db'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: configService.get<string>('DB_SYNC', 'true') === 'true',
+        autoLoadEntities: true,
       }),
     }),
   ],

@@ -16,7 +16,7 @@ export function formatPostWithAuthor(post: Post) {
     featuredImageUrl: post.featuredImageUrl,
     publishOn: post.publishOn,
     tags: post.tags,
-    metaOptions: post.metaOptions,
+    metaValue: post.metaValue ? post.metaValue.metaValue : null,
     author: post.author
       ? {
           name: `${post.author.firstName} ${post.author.lastName ?? ''}`.trim(),

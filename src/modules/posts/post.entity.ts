@@ -1,7 +1,15 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { PostStatus } from './enums/post-status.enum';
 import { PostType } from './enums/post-type.enum';
 import { User } from '../users/user.entity';
+import { MetaOption } from '../meta-options/meta-option.entity';
 
 /**
  * Post persistence model mapped to the posts table.
@@ -106,17 +114,16 @@ export class Post {
   tags: string[];
 
   /**
-   * Optional metadata map persisted as JSON.
+   * One-to-one relationship with meta options for storing additional metadata as JSON.
+   * Automatically loaded with the post (eager: true) and persisted/deleted together (cascade: true).
    */
-  @Column({
-    type: 'jsonb',
-    nullable: true,
-    name: 'meta_options',
-  })
-  metaOptions: Record<string, string>[];
+  @OneToOne(() => MetaOption, { nullable: true, eager: true, cascade: true })
+  @JoinColumn({ name: 'meta_option_id' })
+  metaValue: MetaOption | null;
 
   /**
    * User who authored the post.
+   * Requires explicit loading via relations: ['author'] (eager: false).
    */
   @ManyToOne(() => User, { nullable: false, eager: false })
   @JoinColumn({ name: 'author_id' })

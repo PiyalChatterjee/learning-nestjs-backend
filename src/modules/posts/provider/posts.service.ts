@@ -69,16 +69,15 @@ export class PostsService {
       );
     }
 
-    // extract authorEmail from DTO and transform metaOptions to Record format
-    const { authorEmail, metaOptions, ...postData } = createPostDto;
-    const transformedMetaOptions = this.transformMetaOptions(metaOptions);
+    // extract authorEmail and metaOption from DTO
+    const { authorEmail, metaOption, ...postData } = createPostDto;
 
-    // create post with author relation and transformed meta options
+    // create post with author relation and metaOption relationship
     const post = this.postRepository.create({
       ...postData,
-      author,
-      metaOptions: transformedMetaOptions,
+      metaValue: (metaOption as unknown as typeof post.metaValue) ?? undefined,
     });
+    post.author = author;
 
     // persist the post to the database
     await this.postRepository.save(post);
@@ -102,10 +101,10 @@ export class PostsService {
     );
 
     // replace all mutable fields from full update payload
-    const { metaOptions, ...postData } = updatePostDto;
+    const { metaOption, ...postData } = updatePostDto;
     Object.assign(post, {
       ...postData,
-      metaOptions: this.transformMetaOptions(metaOptions),
+      metaValue: (metaOption as unknown as typeof post.metaValue) ?? post.metaValue,
     });
 
     await this.postRepository.save(post);
@@ -128,12 +127,6 @@ export class PostsService {
     const partialPayload = Object.fromEntries(
       Object.entries(patchPostDto).filter(([, value]) => value !== undefined),
     );
-
-    if (partialPayload.metaOptions) {
-      partialPayload.metaOptions = this.transformMetaOptions(
-        partialPayload.metaOptions,
-      );
-    }
 
     Object.assign(post, partialPayload);
 
@@ -164,17 +157,5 @@ export class PostsService {
     return {
       message: `Post with id ${postId} deleted successfully`,
     };
-  }
-
-  private transformMetaOptions(metaOptions: Array<{ key: string; value: string }>) {
-    return [
-      metaOptions.reduce(
-        (acc, option) => {
-          acc[option.key] = option.value;
-          return acc;
-        },
-        {} as Record<string, string>,
-      ),
-    ];
   }
 }
