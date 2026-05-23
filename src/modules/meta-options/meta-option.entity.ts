@@ -6,6 +6,9 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+/**
+ * Persistence model for post metadata options.
+ */
 @Entity()
 export class MetaOption {
   /** * Primary key for the meta option record. */

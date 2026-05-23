@@ -2,21 +2,21 @@ POST http://localhost:8000/v1/posts
 Content-Type: application/json
 
 {
-  "title": "Getting started with NestJS",
+  "title": "Getting started with NestJS v2",
   "postType": "post",
-  "slug": "getting-started-with-nestjs",
+  "slug": "getting-started-with-nestjs-v2",
   "status": "draft",
   "content": "This is the full content of the post.",
   "schema": "article",
   "featuredImageUrl": "https://example.com/images/post-cover.png",
   "publishOn": "2026-06-01T10:00:00.000Z",
   "tags": [
-    "nestjs",
-    "backend",
-    "typescript"
+    "https://example.com/tags/nestjs",
+    "https://example.com/tags/typescript",
+    "https://example.com/tags/rest-api"
   ],
   "metaOption": {
-    "metaValue": "{\"canonicalUrl\": \"https://example.com/posts/getting-started-with-nestjs\"}"
+    "metaValue": "{\"seo\":{\"canonicalUrl\":\"https://example.com/posts/getting-started-with-nestjs-v2\",\"index\":true,\"priority\":0.9},\"social\":{\"ogType\":\"article\",\"twitterCard\":\"summary_large_image\"},\"keywords\":[\"nestjs\",\"typeorm\",\"many-to-many\"],\"readingTimeMinutes\":7,\"isFeatured\":true}"
   },
-  "authorEmail": "john.doe@example.com"
+  "authorEmail": "jane.doe@example.com"
 }

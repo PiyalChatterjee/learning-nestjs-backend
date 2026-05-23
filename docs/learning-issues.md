@@ -33,6 +33,21 @@ Capture the following fields every time:
 
 ## Quick Notes (Fast Reference)
 
+### Q&A: Why `@JoinTable` for Tags but `@JoinColumn` for Author/MetaOption?
+- Question:
+  - I can see `post_tags` table after refresh. Why is this better in many-to-many, and why do we use `@JoinColumn` for users/meta options?
+- Answer:
+  - Many-to-many (`Post <-> Tag`) means each post can have many tags and each tag can belong to many posts.
+  - A single foreign-key column in `post` cannot represent many tag links cleanly.
+  - `@JoinTable` creates a junction table (`post_tags`) with two foreign keys (`postId`, `tagId`) to store all combinations.
+  - This is normalized, scalable, and query-friendly for relational databases.
+  - `@JoinColumn` is correct for one-to-one or many-to-one cases where one foreign key column is enough:
+    - `author_id` for `ManyToOne(Post -> User)`
+    - `meta_option_id` for `OneToOne(Post -> MetaOption)`
+  - Rule of thumb:
+    - Use `@JoinColumn` when current table needs one FK column.
+    - Use `@JoinTable` when relation needs a separate linking table.
+
 ### Global Prefix `exclude` in NestJS
 - Location: `main.ts` inside `app.setGlobalPrefix('v1', { exclude: [...] })`.
 - What it does: skips applying the global prefix for matched routes.
@@ -466,3 +481,187 @@ findAll(@Query('page') page: number = 1) {
 
 ### Lesson/Topic Context
 - Compodoc coverage increases when both class-level and property-level JSDoc comments are present, especially in entity models that define many exported members.
+
+## 2026-05-23 - Post creation did not validate many-to-many tags existence
+
+### Symptom
+- Creating a post with tag slugs could proceed without verifying whether those tags existed in the `tags` table.
+- Post-to-tag relation mapping was configured with an incorrect relation decorator for many-to-many.
+
+### Root Cause
+- `PostsService.createPost(...)` passed DTO tag values directly into `postRepository.create(...)` without resolving `Tag` entities.
+- `Post` entity used `@JoinColumn` on a `@ManyToMany` relation instead of `@JoinTable`.
+
+### Change Made
+- Updated `src/modules/posts/post.entity.ts`:
+  - Replaced `@JoinColumn` with `@JoinTable({ name: 'post_tags' })` for `tags` relation.
+- Updated `src/modules/posts/provider/posts.service.ts`:
+  - Injected `Tag` repository.
+  - In `createPost`, resolved incoming tag slugs with `In(...)` query.
+  - Added missing-tag detection and `NotFoundException` with the missing slugs list.
+  - Assigned resolved `Tag[]` entities to `post.tags` before save.
+
+### Verification
+- Checked diagnostics on updated files:
+  - `src/modules/posts/post.entity.ts` -> no errors
+  - `src/modules/posts/provider/posts.service.ts` -> no errors
+
+### Lesson/Topic Context
+- For many-to-many relations, always persist relation entities (or their managed references), not raw string values.
+- Validate foreign data existence early in service methods to fail fast with clear client-facing errors.
+
+## 2026-05-23 - PostsService spec failed after adding Tag repository injection
+
+### Symptom
+- `posts.service.spec.ts` failed with Nest dependency resolution error for `TagRepository`.
+
+### Root Cause
+- `PostsService` constructor added `@InjectRepository(Tag)` but the unit test module providers did not include `getRepositoryToken(Tag)`.
+
+### Change Made
+- Updated `src/modules/posts/provider/posts.service.spec.ts`:
+  - Added `Tag` import.
+  - Added `{ provide: getRepositoryToken(Tag), useValue: {} }` to testing module providers.
+  - Removed unused `UsersService` import.
+
+### Verification
+- Ran posts service spec only; result: 1 passed, 0 failed.
+
+### Lesson/Topic Context
+- When adding constructor-injected dependencies in Nest services, mirror those dependencies in unit test module mocks immediately.
+
+## 2026-05-23 - PUT/PATCH post updates did not validate many-to-many tags
+
+### Symptom
+- Updating posts could assign raw tag strings into the relation path and did not consistently fail when provided tags did not exist.
+
+### Root Cause
+- Tag existence checking logic existed only in create flow.
+- PUT/PATCH paths were not resolving tag slugs into `Tag` entities before persistence.
+
+### Change Made
+- Updated [src/modules/posts/provider/posts.service.ts](src/modules/posts/provider/posts.service.ts):
+  - Added `resolveTagsOrThrow(...)` private helper.
+  - Reused helper in `createPost`, `updatePost`, and `patchPost`.
+  - `updatePost` now resolves full tag set before assignment.
+  - `patchPost` resolves tags only when `tags` is included in payload.
+  - Throws `NotFoundException` listing missing tag slugs.
+
+### Verification
+- Diagnostics for [src/modules/posts/provider/posts.service.ts](src/modules/posts/provider/posts.service.ts): no errors.
+- Ran [src/modules/posts/provider/posts.service.spec.ts](src/modules/posts/provider/posts.service.spec.ts): 1 passed, 0 failed.
+
+### Lesson/Topic Context
+- Many-to-many writes should always operate on resolved relation entities, not raw payload strings.
+- Centralized validation logic prevents drift between create/update/patch behavior.
+
+## 2026-05-23 - Post tags DTO validation expected nested objects instead of string URLs
+
+### Symptom
+- POST /v1/posts returned 400 with repeated errors:
+  - `tags.each value in nested property tags must be either object or array`
+
+### Root Cause
+- In `CreatePostDto`, `tags` was configured with `@ValidateNested({ each: true })`, which is meant for object arrays.
+- Actual payload uses `string[]` tag slugs/URLs.
+
+### Change Made
+- Updated [src/modules/posts/dtos/create-post.dto.ts](src/modules/posts/dtos/create-post.dto.ts):
+  - Replaced `@ValidateNested({ each: true })` with `@IsString({ each: true })` and `@IsUrl({}, { each: true })` for `tags`.
+  - Updated Swagger example to URL-based tag values.
+
+### Verification
+- Checked diagnostics for [src/modules/posts/dtos/create-post.dto.ts](src/modules/posts/dtos/create-post.dto.ts): no errors.
+
+### Lesson/Topic Context
+- Use nested validation only for arrays of objects/DTOs; for primitive arrays use primitive validators with `each: true`.
+
+## 2026-05-23 - Duplicate post slug caused raw database unique constraint error
+
+### Symptom
+- Creating a post with an existing slug crashed into a `QueryFailedError` from Postgres (`code: 23505`) with a raw stack trace and DB constraint name.
+
+### Root Cause
+- `slug` is unique at DB level, but `createPost` did not provide an application-level conflict check or friendly conflict exception mapping.
+
+### Change Made
+- Updated [src/modules/posts/provider/posts.service.ts](src/modules/posts/provider/posts.service.ts):
+  - Added pre-insert slug lookup and throws `ConflictException` if slug already exists.
+  - Wrapped save in a fallback `QueryFailedError` handler for `23505` to return the same friendly conflict message in race conditions.
+
+### Verification
+- Diagnostics for [src/modules/posts/provider/posts.service.ts](src/modules/posts/provider/posts.service.ts): no errors.
+
+### Lesson/Topic Context
+- Keep DB unique constraints as the source of truth, but translate expected uniqueness violations into clean API-level conflict responses.
+
+## 2026-05-23 - Replaced inline duplicate checks with reusable unique-constraint exception helper
+
+### Symptom
+- Duplicate slug handling logic was duplicated inline in post service and mixed with feature logic.
+
+### Root Cause
+- Conflict translation for DB unique violations was implemented directly inside service methods.
+
+### Change Made
+- Added [src/common/exceptions/unique-constraint.helper.ts](src/common/exceptions/unique-constraint.helper.ts):
+  - `throwIfUniqueConstraintViolation(error, options)`.
+- Refactored [src/modules/posts/provider/posts.service.ts](src/modules/posts/provider/posts.service.ts):
+  - Removed pre-insert slug existence query.
+  - Reused helper in create/update/patch save catch blocks.
+
+### Verification
+- Diagnostics:
+  - [src/modules/posts/provider/posts.service.ts](src/modules/posts/provider/posts.service.ts) -> no errors
+  - [src/common/exceptions/unique-constraint.helper.ts](src/common/exceptions/unique-constraint.helper.ts) -> no errors
+
+### Lesson/Topic Context
+- Prefer reusable exception translation helpers for DB-specific errors to keep services clean and consistent across modules.
+
+## 2026-05-23 - New post creation kept failing because request reused an existing slug
+
+### Symptom
+- POST `/v1/posts` returned `409 Conflict` with message that slug already exists.
+
+### Root Cause
+- Request payload in [src/modules/posts/http/posts.post.endpoint.http](src/modules/posts/http/posts.post.endpoint.http) still used an existing slug (`getting-started-with-nestjs`).
+
+### Change Made
+- Updated request payload in [src/modules/posts/http/posts.post.endpoint.http](src/modules/posts/http/posts.post.endpoint.http):
+  - `title` -> `Getting started with NestJS v2`
+  - `slug` -> `getting-started-with-nestjs-v2`
+
+### Verification
+- Payload now uses a new unique slug, so it can create a new post instead of colliding with existing row.
+
+### Lesson/Topic Context
+- When testing create endpoints with unique fields, always vary test identifiers (slug/email/username) between runs.
+
+## 2026-05-23 - Compodoc coverage had uncovered symbols after refactors
+
+### Symptom
+- Compodoc coverage report showed several non-100 entries (for example interfaces/services/controllers/entities with 0-83% coverage).
+
+### Root Cause
+- New/refactored files introduced symbols without explicit JSDoc (class/interface/constructor/method/property descriptions).
+
+### Change Made
+- Added focused missing JSDoc comments in uncovered files:
+  - [src/common/exceptions/unique-constraint.helper.ts](src/common/exceptions/unique-constraint.helper.ts)
+  - [src/common/validators/tag-relation.validator.ts](src/common/validators/tag-relation.validator.ts)
+  - [src/modules/meta-options/dtos/post-meta-options.dto.ts](src/modules/meta-options/dtos/post-meta-options.dto.ts)
+  - [src/modules/meta-options/meta-option.entity.ts](src/modules/meta-options/meta-option.entity.ts)
+  - [src/modules/meta-options/meta-options.controller.ts](src/modules/meta-options/meta-options.controller.ts)
+  - [src/modules/meta-options/provider/meta-options.service.ts](src/modules/meta-options/provider/meta-options.service.ts)
+  - [src/modules/tags/dtos/post-tag.dto.ts](src/modules/tags/dtos/post-tag.dto.ts)
+  - [src/modules/tags/tag.entity.ts](src/modules/tags/tag.entity.ts)
+  - [src/modules/tags/tags.controller.ts](src/modules/tags/tags.controller.ts)
+  - [src/modules/tags/providers/tags.service.ts](src/modules/tags/providers/tags.service.ts)
+
+### Verification
+- Ran `npm run doc` and rechecked [.compodoc/coverage.html](.compodoc/coverage.html).
+- No non-100 coverage entries remain in the documentation coverage table.
+
+### Lesson/Topic Context
+- Compodoc coverage tracks exported/documented symbols, not only executable code lines.
+- Constructor-level JSDoc may be needed even when parameter comments already exist.

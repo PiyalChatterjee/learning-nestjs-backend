@@ -1,0 +1,52 @@
+### Create a simple tag
+POST http://localhost:8000/v1/tags
+Content-Type: application/json
+
+{
+  "name": "NestJS",
+  "slug": "https://example.com/tags/nestjs",
+  "description": "Node.js framework for building scalable server-side applications"
+}
+
+### Create a tag with feature image
+POST http://localhost:8000/v1/tags
+Content-Type: application/json
+
+{
+  "name": "TypeScript",
+  "slug": "https://example.com/tags/typescript",
+  "description": "Typed superset of JavaScript that compiles to plain JavaScript",
+  "featureImageUrl": "https://example.com/images/typescript.png"
+}
+
+### Create a tag with schema metadata
+POST http://localhost:8000/v1/tags
+Content-Type: application/json
+
+{
+  "name": "REST API",
+  "slug": "https://example.com/tags/rest-api",
+  "description": "Representational State Transfer architecture for web APIs",
+  "schema": "{\"category\": \"architecture\", \"level\": \"intermediate\"}"
+}
+
+### Create a comprehensive tag with all fields
+POST http://localhost:8000/v1/tags
+Content-Type: application/json
+
+{
+  "name": "Database Design",
+  "slug": "https://example.com/tags/database-design",
+  "description": "Principles and practices for designing efficient databases",
+  "featureImageUrl": "https://example.com/images/database.png",
+  "schema": "{\"category\": \"backend\", \"difficulty\": \"advanced\", \"tools\": [\"PostgreSQL\", \"MongoDB\"]}"
+}
+
+### Create a minimal tag
+POST http://localhost:8000/v1/tags
+Content-Type: application/json
+
+{
+  "name": "Testing",
+  "slug": "https://example.com/tags/testing"
+}

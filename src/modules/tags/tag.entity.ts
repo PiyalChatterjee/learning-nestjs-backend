@@ -7,6 +7,9 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+/**
+ * Persistence model for reusable post tags.
+ */
 @Entity()
 export class Tag {
   /** * Primary key for the tag record. */

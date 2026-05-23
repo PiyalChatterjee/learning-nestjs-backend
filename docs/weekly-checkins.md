@@ -28,6 +28,38 @@
 	- Scoped `tsconfig` to `src` and excluded `docs`.
 	- Split Compodoc commands by intent and moved generated output to `.compodoc`.
 
+## Week 1 Summary (2026-05-23)
+
+- What I completed:
+	- Consolidated and stabilized most of the implementation started in Week 0.
+	- Finished posts CRUD learning scope with repository-backed flows and consistent DTO validation.
+	- Modeled major relationships in persistence layer:
+		- post -> user (many-to-one)
+		- post -> meta option (one-to-one)
+		- post <-> tags (many-to-many via `post_tags` junction table)
+	- Added tags create/get workflow and linked tags to posts using slug-based resolution.
+	- Added reusable common components for cleaner architecture:
+		- not-found helper
+		- unique-constraint helper for DB conflict translation
+		- relation validator for tags
+	- Improved payload formatting/parsing helpers for JSON-backed response fields.
+	- Updated learning docs (roadmap + issue log) continuously during debugging/fixes.
+- What I learned:
+	- `@JoinTable` is required for many-to-many and creates a separate link table; `@JoinColumn` is for direct FK columns.
+	- Primitive arrays in DTOs should use per-item primitive validators (for example `@IsString({ each: true })`) instead of nested validators.
+	- DB unique constraints should be translated to clean API-level conflict responses.
+	- Reusable validators/helpers keep services smaller and easier to maintain.
+- Where I got blocked:
+	- Duplicate slug conflicts while testing repeated post creation.
+	- Tag payload validation mismatch due to incorrect DTO validator type.
+	- Confusion about why tags were not visible when create failed with conflict.
+- How I resolved it:
+	- Added unique-constraint exception mapping and used fresh slugs for create tests.
+	- Fixed tags validator to match `string[]` URL payloads.
+	- Verified many-to-many behavior through successful post create/patch flows and DB table refresh.
+- Week close note:
+	- Week 1 closed with strong progress; most core build-out happened in Week 0 and was matured, corrected, and relationship-enabled in Week 1.
+
 ## Course Coverage This Week
 
 - Users module progress: CRUD-style controller flow + DTO validation complete for current in-memory phase.

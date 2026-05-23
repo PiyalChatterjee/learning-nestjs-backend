@@ -4,11 +4,13 @@ import {
   IsOptional,
   IsString,
   IsUrl,
-  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
 
+/**
+ * Payload used to create a tag.
+ */
 export class PostTagDto {
   /**
    * Name of the tag.
@@ -30,14 +32,10 @@ export class PostTagDto {
    */
   @ApiProperty({
     description: 'URL-friendly unique slug for the tag',
-    example: 'nestjs',
+    example: 'https://example.com/tags/nestjs',
   })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
-    message:
-      'Slug must be URL-friendly (lowercase letters, numbers, and hyphens only)',
-  })
   @MaxLength(256)
   @IsUrl()
   slug: string;
@@ -84,9 +82,5 @@ export class PostTagDto {
   @MaxLength(1024)
   @IsOptional()
   @IsUrl()
-  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
-    message:
-      'Feature image URL must be URL-friendly (lowercase letters, numbers, and hyphens only)',
-  })
   featureImageUrl?: string;
 }

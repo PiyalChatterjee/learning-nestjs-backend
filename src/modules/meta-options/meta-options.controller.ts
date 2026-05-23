@@ -2,6 +2,9 @@ import { Body, Controller, Post } from '@nestjs/common';
 import { PostMetaOptionDto } from './dtos/post-meta-options.dto';
 import { MetaOptionsService } from './provider/meta-options.service';
 
+/**
+ * Handles HTTP endpoints for metadata options.
+ */
 @Controller('meta-options')
 export class MetaOptionsController {
   constructor(
@@ -11,6 +14,10 @@ export class MetaOptionsController {
      */
     private readonly metaOptionsService: MetaOptionsService,
   ) {}
+
+  /**
+   * Creates a metadata option record.
+   */
   @Post()
   public createMetaOption(@Body() postMetaOptionDto: PostMetaOptionDto) {
     return this.metaOptionsService.createMetaOption(postMetaOptionDto);

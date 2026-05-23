@@ -4,8 +4,14 @@ import { Repository } from 'typeorm';
 import { MetaOption } from '../meta-option.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 
+/**
+ * Handles persistence operations for metadata options.
+ */
 @Injectable()
 export class MetaOptionsService {
+  /**
+   * Initializes meta-options persistence dependencies.
+   */
   constructor(
     /**
      * inject meta option repository here if you want to persist meta options in the database
@@ -16,6 +22,9 @@ export class MetaOptionsService {
     private readonly metaOptionRepository: Repository<MetaOption>,
   ) {}
 
+  /**
+   * Creates and persists a metadata option entity.
+   */
   public async createMetaOption(postMetaOptionDto: PostMetaOptionDto) {
     /**
      * Create a new MetaOption instance from the provided DTO and persist it to the database.

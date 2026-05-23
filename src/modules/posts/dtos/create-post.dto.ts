@@ -113,10 +113,16 @@ export class CreatePostDto {
   @ApiProperty({
     description: 'List of tags associated with the post',
     type: [String],
-    example: ['nestjs', 'backend', 'typescript'],
+    example: [
+      'https://example.com/tags/nestjs',
+      'https://example.com/tags/typescript',
+      'https://example.com/tags/rest-api',
+    ],
   })
   @IsArray()
   @IsString({ each: true })
+  @IsUrl({}, { each: true })
+  @Type(() => String)
   tags: string[];
 
   /**

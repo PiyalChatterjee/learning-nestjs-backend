@@ -4,13 +4,20 @@
 
 Build a course-aligned backend in small learning increments, with proof of implementation and a clear next-step backlog.
 
-## Current Snapshot (2026-05-19)
+## Current Snapshot (2026-05-23)
 
 - Core app bootstrap is in place with versioned routing and validation.
 - Users module has full controller-level CRUD-style routes with DTO validation and TypeORM repository-backed service methods.
-- Posts module now has CRUD endpoints (create, get all, get by id, put, patch, delete) with validated DTOs, enums, repository-backed service methods, and formatted author details.
+- Posts module has CRUD endpoints (create, get all, get by id, put, patch, delete) with validated DTOs, enums, repository-backed service methods, formatted author details, and relation-aware tag resolution.
+- Tags module now supports create/get flows and is linked to posts through many-to-many mapping with a junction table.
+- Reusable relation validator and exception helpers are now used for cleaner service logic:
+	- tag relation resolution moved to a common validator
+	- DB unique constraint translation moved to a common exception helper
 - Shared reusable not-found exception helper is implemented and used in users and posts services.
-- Post entity now models author ownership through a relation to users (author_id).
+- Post entity now models:
+	- author ownership via users relation (`author_id`)
+	- post metadata via one-to-one relation (`meta_option_id`)
+	- tag associations via many-to-many relation (`post_tags`)
 - Swagger is configured and available at /api.
 - Compodoc workflow is set with build/serve/watch scripts and generated output isolated to .compodoc.
 - JSDoc coverage is complete for scoped backend source files.
@@ -46,11 +53,14 @@ Status: Complete (Learning Scope)
 
 ## Week 4: Database Relationships Module
 
-Status: In Progress
+Status: Complete (Learning Scope)
 
-- TypeORM entities are wired for persistence in users and posts services.
+- TypeORM entities are wired for persistence in users/posts/tags/meta-options services.
 - Post-to-user ownership relation is modeled via `ManyToOne` (`author_id`).
-- Remaining: add inverse relation on user side (if needed), tighten migration strategy (reduce reliance on synchronize), and expand relational queries/use-cases.
+- Post-to-meta relation is modeled via `OneToOne` (`meta_option_id`).
+- Post-to-tag relation is modeled via `ManyToMany` with join table (`post_tags`).
+- Service-level relation integrity checks are in place for tags (missing tags return 404).
+- Remaining: add inverse relations where useful and tighten migration strategy (reduce reliance on synchronize).
 
 ## Week 5: API Documentation Workflow
 
@@ -76,7 +86,7 @@ Status: Partial
 
 Status: Partial
 
-- Unit test scaffolding exists and targeted module tests pass.
+- Unit test scaffolding exists and targeted module tests pass after recent DI/refactor changes.
 - Broader service behavior tests and e2e coverage are still pending.
 - Docker exploration not started.
 
@@ -85,8 +95,9 @@ Status: Partial
 1. Add dedicated tests for new posts CRUD methods (service + controller).
 2. Add at least one auth guard and protect selected users/posts routes.
 3. Strengthen DB lifecycle with migrations and reduce reliance on `synchronize` for schema changes.
-4. Expand relationship usage (author-centric queries and optional inverse mapping from users to posts).
-5. Expand test coverage beyond smoke tests.
+4. Add integration tests that verify `post_tags` write/read behavior end-to-end.
+5. Expand relationship usage (author-centric queries and optional inverse mapping from users to posts).
+6. Expand test coverage beyond smoke tests.
 
 ## Continuous Tracking Rules
 
@@ -105,3 +116,5 @@ Status: Partial
 | 2026-05-19 | Users + posts repository transition | Replaced in-memory behavior with TypeORM repositories in users/posts services; create post now resolves author by email | src/modules/users/provider/users.service.ts, src/modules/posts/provider/posts.service.ts, docs/learning-issues.md | 4 | Should unauthorized checks move from generic Error to Nest UnauthorizedException globally? |
 | 2026-05-19 | Post ownership relation and response shaping | Added post author relation to users and helper-based author response formatting (name + email) | src/modules/posts/post.entity.ts, src/modules/posts/helpers/format-post-with-author.helper.ts, src/modules/posts/provider/posts.service.ts | 4 | Add inverse `OneToMany` relation in user entity now or later when needed? |
 | 2026-05-19 | Posts full CRUD completion | Added remaining posts operations: get by id, put, delete; added UpdatePostDto and aligned PatchPostDto; wired controller + service repository flow | src/modules/posts/posts.controller.ts, src/modules/posts/provider/posts.service.ts, src/modules/posts/dtos/update-post.dto.ts, src/modules/posts/dtos/patch-post.dto.ts | 4 | Should update/patch support author reassignment by email in a separate dedicated endpoint? |
+| 2026-05-23 | Tags relationship integration + validation cleanup | Linked posts-tags via many-to-many (`post_tags`), added common tag relation validator, fixed tags DTO per-item validation, and aligned HTTP payloads with URL tag slugs | src/modules/posts/post.entity.ts, src/common/validators/tag-relation.validator.ts, src/modules/posts/dtos/create-post.dto.ts, src/modules/posts/provider/posts.service.ts | 5 | Should API accept tag IDs internally while keeping slugs as public identifiers? |
+| 2026-05-23 | Reusable DB exception handling pattern | Added common helper to translate unique DB errors into ConflictException and reused it across create/update/patch post writes | src/common/exceptions/unique-constraint.helper.ts, src/modules/posts/provider/posts.service.ts | 5 | Generalize exception mapping into a global DB exception filter later? |

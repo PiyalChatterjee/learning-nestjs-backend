@@ -14,6 +14,15 @@
 - Generate Compodoc after major module additions.
 - Document assumptions and tradeoffs in markdown under `docs/`.
 
+### JSDoc Checklist For New Exports
+
+- Add class-level JSDoc for every exported controller/service/entity/DTO/helper.
+- Add property-level JSDoc for exported DTO/entity fields.
+- Add method-level JSDoc for exported public methods/functions.
+- Add constructor-level JSDoc when dependencies are injected.
+- For interfaces/types used in docs, add brief purpose comments on the type and key fields.
+- After adding/refactoring exports, run `npm run doc` and check `.compodoc/coverage.html` for non-100 entries.
+
 ## Error Handling
 
 - Use domain-specific exceptions in services.

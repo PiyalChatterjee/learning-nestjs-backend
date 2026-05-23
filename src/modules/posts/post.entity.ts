@@ -2,6 +2,8 @@ import {
   Column,
   Entity,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -10,6 +12,7 @@ import { PostStatus } from './enums/post-status.enum';
 import { PostType } from './enums/post-type.enum';
 import { User } from '../users/user.entity';
 import { MetaOption } from '../meta-options/meta-option.entity';
+import { Tag } from '../tags/tag.entity';
 
 /**
  * Post persistence model mapped to the posts table.
@@ -106,12 +109,9 @@ export class Post {
   /**
    * Optional list of tag labels.
    */
-  @Column({
-    type: 'varchar',
-    array: true,
-    nullable: true,
-  })
-  tags: string[];
+  @ManyToMany(() => Tag, { eager: true })
+  @JoinTable({ name: 'post_tags' })
+  tags: Tag[];
 
   /**
    * One-to-one relationship with meta options for storing additional metadata as JSON.
