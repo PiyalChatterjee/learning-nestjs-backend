@@ -9,9 +9,19 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TagsModule } from './modules/tags/tags.module';
 import { MetaOptionsModule } from './modules/meta-options/meta-options.module';
+// Database configuration
+import { AppDataSource } from './database/data-source';
 
 /**
  * Root application module that wires feature modules and infrastructure.
+ *
+ * Database Configuration:
+ * - Development: Uses TypeOrmModule.forRootAsync with autoLoadEntities: true and synchronize: true
+ *   to auto-discover entities and apply schema changes on startup.
+ * - Production: Should use AppDataSource from src/database/data-source.ts with explicit migrations
+ *   (set synchronize: false and run migrations via `npm run migration:run`).
+ *
+ * See src/database/data-source.ts for the TypeORM CLI configuration used by migration commands.
  */
 @Module({
   imports: [

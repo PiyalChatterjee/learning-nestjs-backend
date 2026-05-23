@@ -43,7 +43,9 @@
 		- unique-constraint helper for DB conflict translation
 		- relation validator for tags
 	- Improved payload formatting/parsing helpers for JSON-backed response fields.
+	- Set up database infrastructure (TypeORM DataSource, migration scripts ready; `src/database/` with migrations folder).
 	- Updated learning docs (roadmap + issue log) continuously during debugging/fixes.
+	- Updated README with full project overview, setup instructions, endpoints, and architecture rationale.
 - What I learned:
 	- `@JoinTable` is required for many-to-many and creates a separate link table; `@JoinColumn` is for direct FK columns.
 	- Primitive arrays in DTOs should use per-item primitive validators (for example `@IsString({ each: true })`) instead of nested validators.
@@ -62,23 +64,28 @@
 
 ## Course Coverage This Week
 
-- Users module progress: CRUD-style controller flow + DTO validation complete for current in-memory phase.
-- Posts module progress: create/get/patch complete with validated payload structure.
-- Database relationships progress: not started (in-memory data only).
-- Documentation progress (Swagger/Compodoc): Swagger active; Compodoc workflow and coverage baseline established.
+- Users module progress: CRUD-style controller flow + DTO validation complete for current phase.
+- Posts module progress: full CRUD complete with validated payloads and relationship resolution.
+- Tags module progress: create/get complete with many-to-many integration to posts.
+- Meta-options module progress: create complete with one-to-one integration to posts.
+- Database relationships progress: all 3 major relationship types implemented and tested (M:1, O:1, M:M).
+- Database infrastructure progress: TypeORM DataSource + migration scripts ready (active in Week 2+).
+- Documentation progress (Swagger/Compodoc): Swagger active and fully documented; Compodoc 100% symbol coverage achieved.
 - Auth progress (if covered this week): auth module wiring and basic service checks in place.
-- Advanced concepts covered (guards/interceptors/decorators/serialization): decorators and validation pipe usage covered; guards/interceptors pending.
+- Advanced concepts covered (guards/interceptors/decorators/serialization): decorators, validation pipe, and DTO serialization covered; guards/interceptors pending.
 - Docker exploration progress (optional): not started.
 
 ## Demo Evidence
 
 - Endpoint(s):
 	- `GET /v1/users`, `GET /v1/users/:id`, `POST /v1/users`, `PUT /v1/users/:id`, `PATCH /v1/users/:id`, `DELETE /v1/users/:id`
-	- `GET /v1/posts?userId=1`, `POST /v1/posts`, `PATCH /v1/posts/:id`
+	- `GET /v1/posts`, `GET /v1/posts/:id`, `POST /v1/posts`, `PUT /v1/posts/:id`, `PATCH /v1/posts/:id`, `DELETE /v1/posts/:id`
+	- `GET /v1/tags`, `POST /v1/tags`
+	- `POST /v1/meta-options`
 - Test(s) added:
-	- Module-level specs for users/posts compile and pass in the current setup.
+	- Module-level specs for users/posts/tags/meta-options compile and pass in current setup.
 - Swagger or API proof:
-	- Swagger UI available at `/api`.
+	- Swagger UI available at `/api` with 3 major entity groups fully documented.
 - Screenshot/recording link:
 	- Pending.
 - Commit/PR refs:
@@ -87,7 +94,10 @@
 ## Next Week Focus
 
 - Planned lessons:
-	- Complete posts CRUD and begin relationship module lessons.
+	- Activate TypeORM migrations (switch from `synchronize: true` to explicit migration-based schema management).
+	- Add auth guards and JWT-based route protection.
+	- Write integration tests for post-tags-metadata workflows.
+	- Add pagination, filtering, and sorting to list endpoints.
 - Planned implementation:
 	- Add posts get-by-id/delete (and optional put), then start persistence/repository layer.
 	- Introduce route protection with at least one guard.

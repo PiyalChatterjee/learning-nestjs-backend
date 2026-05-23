@@ -20,7 +20,10 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "doc": "compodoc -p tsconfig.json -d ./.compodoc",
     "doc:serve": "compodoc -p tsconfig.json -d ./.compodoc -s --port 8080",
-    "doc:watch": "compodoc -p tsconfig.json -d ./.compodoc -s --port 8080 --watch"
+    "doc:watch": "compodoc -p tsconfig.json -d ./.compodoc -s --port 8080 --watch",
+    "migration:generate": "typeorm migration:generate -d src/database/data-source.ts",
+    "migration:run": "typeorm migration:run -d src/database/data-source.ts",
+    "migration:revert": "typeorm migration:revert -d src/database/data-source.ts"
   },
   "dependencies": {
     "@compodoc/compodoc": "^1.2.1",

@@ -2,7 +2,7 @@
 
 **Goal:** Structured NestJS backend learning through hands-on implementation of real-world patterns—users, posts, tags, metadata—with focus on persistence, relationships, validation, and reusable architecture.
 
-**Status:** Week 1 Complete. All core CRUD flows for 4 major entities are live with many-to-many relationships, validation helpers, and reusable exception/validator patterns.
+**Status:** Week 1 Complete. All core CRUD flows for 4 major entities are live with many-to-many relationships, validation helpers, reusable exception/validator patterns, and database infrastructure ready for migrations.
 
 ## Base Structure
 
@@ -79,6 +79,25 @@ npm run doc:serve # Serve generated docs locally
 npm run doc:watch # Watch and rebuild on file changes
 ```
 
+## Database & Migrations
+
+### Current Setup (Week 1)
+- **Mode:** Development with `synchronize: true`
+- **Workflow:** Update entities → restart server → schema auto-applies
+- **Entities:** User, Post, Tag, MetaOption auto-discovered and synced
+- **No action required:** Just edit entities and restart `npm run start:dev`
+
+### Migration Infrastructure (Ready for Production)
+Configuration is in place at `src/database/data-source.ts`. When you reach the Migrations lesson in Week 2+, switch to explicit migrations:
+
+```bash
+npm run migration:generate -- -n DescriptiveChangeName  # Auto-generate from entity diff
+npm run migration:run                                   # Apply pending migrations
+npm run migration:revert                                # Rollback last migration
+```
+
+Migration files auto-save to `src/database/migrations/` and track your schema history in version control.
+
 ## Project Files
 
 - **[docs/roadmap.md](docs/roadmap.md)** — Course lessons mapped to implementation with status tracking.
@@ -127,7 +146,7 @@ npm run doc:watch # Watch and rebuild on file changes
 1. Add auth guards and route protection (at least one JWT-protected endpoint).
 2. Write integration tests for post-tags-metadata workflows.
 3. Add pagination, filtering, and sorting to list endpoints.
-4. Migrate to explicit TypeORM migrations (reduce reliance on `synchronize`).
+4. **Migrate to explicit TypeORM migrations** (infrastructure ready in `src/database/data-source.ts`; switch `synchronize: false` when ready; see "Database & Migrations" section).
 5. Explore Docker setup for containerized local development.
 
 ## Learning Philosophy
