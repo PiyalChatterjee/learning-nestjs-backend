@@ -1,4 +1,5 @@
-import { Check, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Check, Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Post } from '../posts/post.entity';
 
 /**
  * User persistence model mapped to the users table.
@@ -63,4 +64,7 @@ export class User {
     name: 'password',
   })
   password: string;
+
+  @OneToMany(() => Post, (post) => post.author)
+  posts: Post[];
 }

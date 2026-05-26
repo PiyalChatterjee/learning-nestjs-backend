@@ -1,0 +1,5 @@
+### Soft-delete tag by id
+DELETE http://localhost:8000/v1/tags/6
+
+### Verify deleted tag is hidden from default queries
+GET http://localhost:8000/v1/tags

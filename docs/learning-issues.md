@@ -132,6 +132,36 @@ findAll(@Query('page') page: number = 1) {
 }
 ```
 
+### TypeORM @DeleteDateColumn Soft Delete Behavior
+- When a column is marked with `@DeleteDateColumn`, TypeORM automatically handles soft deletes.
+- **Soft delete** via `softRemove()` or `softDelete()` — sets `deleteDate` to current timestamp; row stays in DB.
+- **Standard queries** (`find()`, `findOne()`) automatically exclude soft-deleted rows via `WHERE deleteDate IS NULL`.
+- **To include** soft-deleted rows in a query, use `withDeleted: true`:
+  ```ts
+  await this.tagRepository.find({ withDeleted: true });
+  ```
+- **Hard delete** via `remove()` — physically deletes the row (no soft delete).
+- Use `softRemove()` when you want audit trail / recovery option; use `remove()` when row should truly vanish.
+- Soft-deleted rows are **not returned by default** even though they physically exist in the DB table.
+
+### TypeORM `onDelete` in ManyToMany — Must Be on the Owning Side
+- `onDelete` in a `@ManyToMany` decorator only has effect on the **owning side** (the entity with `@JoinTable`).
+- Setting it on the **inverse side** is silently ignored — TypeORM does not apply the FK constraint from there.
+- **Correct placement:**
+  ```ts
+  // Post.tags — owning side (has @JoinTable) ✅
+  @ManyToMany(() => Tag, (tag) => tag.posts, { eager: true, onDelete: 'CASCADE' })
+  @JoinTable({ name: 'post_tags' })
+  tags: Tag[];
+
+  // Tag.posts — inverse side ❌ onDelete here is ignored
+  @ManyToMany(() => Post, (post) => post.tags)
+  posts: Post[];
+  ```
+- `onDelete: 'CASCADE'` on the owning side instructs the DB to automatically remove `post_tags` junction rows when a `Tag` row is hard-deleted.
+- This is a **DB-level FK constraint** — it only takes effect after generating and running a migration.
+- Does NOT delete `Post` rows — only cleans up the junction table link.
+
 ## 2026-05-17 - Jest globals not recognized in spec files
 
 ### Symptom
@@ -665,3 +695,53 @@ findAll(@Query('page') page: number = 1) {
 ### Lesson/Topic Context
 - Compodoc coverage tracks exported/documented symbols, not only executable code lines.
 - Constructor-level JSDoc may be needed even when parameter comments already exist.
+
+## 2026-05-25 - Circular eager loading error when eager: true set on both sides of a relation
+
+### Symptom
+- TypeORM threw: `Error: Circular eager relations are not allowed. Post -> User -> Post`
+- Occurred after setting `eager: true` on both `Post.author` (ManyToOne) and `User.posts` (OneToMany).
+
+### Root Cause
+- TypeORM eagerly loads the relation automatically on every `find`/`findOne`.
+- With `eager: true` on both sides, loading a `Post` triggers eager load of `User`, which triggers eager load of `User.posts`, which triggers eager load of `Post.author` again — infinite recursion.
+- TypeORM detects this cycle and throws instead of hanging.
+
+### Change Made
+- Kept `eager: true` only on `Post.author` (the owning/dependent side).
+- Left `User.posts` as `eager: false` (default); load explicitly via `relations: ['posts']` only when needed.
+
+### Verification
+- App started without errors after removing `eager: true` from the inverse side.
+
+### Lesson/Topic Context
+- `eager: true` must only be set on **one side** of a bidirectional relationship.
+- Set eager on the **owning/dependent** side (the entity that needs the other to be useful on its own).
+- Leave the **inverse/aggregate** side as lazy; load it explicitly when required.
+- Rule: if loading A always needs B, set eager on A. Do not set eager on B just because A is eager.
+
+## 2026-05-25 - Soft delete for tags should be triggered from tags endpoint, not post deletion flow
+
+### Symptom
+- Confusion about where to execute soft delete when `Tag` has `@DeleteDateColumn` and is related to `Post` through many-to-many.
+
+### Root Cause
+- Relationship ownership (`Post.tags` has `@JoinTable`) does not mean tag lifecycle must be managed from post deletion.
+- Soft delete is an entity lifecycle action and should be triggered by the entity's own service/controller.
+
+### Change Made
+- Added soft-delete method in [src/modules/tags/providers/tags.service.ts](src/modules/tags/providers/tags.service.ts):
+  - `deleteTag(tagId: number)` uses `tagRepository.softRemove(tag)`.
+- Added API trigger in [src/modules/tags/tags.controller.ts](src/modules/tags/tags.controller.ts):
+  - `DELETE /v1/tags/:id`.
+- Added HTTPyac examples in [src/modules/tags/http/tags.delete.endpoint.http](src/modules/tags/http/tags.delete.endpoint.http).
+
+### Verification
+- Focused tests passed:
+  - `src/modules/tags/providers/tags.service.spec.ts`
+  - `src/modules/tags/tags.controller.spec.ts`
+- TypeScript diagnostics show no errors in updated tag service/controller files.
+
+### Lesson/Topic Context
+- Use `softRemove`/`softDelete` where `@DeleteDateColumn` exists and you want logical deletion.
+- Deleting a `Post` should not delete `Tag` rows; manage relation links separately from tag lifecycle.

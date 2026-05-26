@@ -1,10 +1,11 @@
+### Create post with full data (Jane Doe, all tags)
 POST http://localhost:8000/v1/posts
 Content-Type: application/json
 
 {
-  "title": "Getting started with NestJS v2",
+  "title": "Getting started with NestJS",
   "postType": "post",
-  "slug": "getting-started-with-nestjs-v2",
+  "slug": "getting-started-with-nestjs",
   "status": "draft",
   "content": "This is the full content of the post.",
   "schema": "article",
@@ -16,7 +17,67 @@ Content-Type: application/json
     "https://example.com/tags/rest-api"
   ],
   "metaOption": {
-    "metaValue": "{\"seo\":{\"canonicalUrl\":\"https://example.com/posts/getting-started-with-nestjs-v2\",\"index\":true,\"priority\":0.9},\"social\":{\"ogType\":\"article\",\"twitterCard\":\"summary_large_image\"},\"keywords\":[\"nestjs\",\"typeorm\",\"many-to-many\"],\"readingTimeMinutes\":7,\"isFeatured\":true}"
+    "metaValue": "{\"seo\":{\"canonicalUrl\":\"https://example.com/posts/getting-started-with-nestjs\",\"index\":true,\"priority\":0.9},\"social\":{\"ogType\":\"article\",\"twitterCard\":\"summary_large_image\"},\"keywords\":[\"nestjs\",\"typeorm\",\"many-to-many\"],\"readingTimeMinutes\":7,\"isFeatured\":true}"
   },
   "authorEmail": "jane.doe@example.com"
+}
+
+### Create post with no tags (John Doe)
+POST http://localhost:8000/v1/posts
+Content-Type: application/json
+
+{
+  "title": "Introduction to TypeORM",
+  "postType": "post",
+  "slug": "introduction-to-typeorm",
+  "status": "draft",
+  "content": "A hands-on guide to using TypeORM with NestJS.",
+  "schema": "article",
+  "featuredImageUrl": "https://example.com/images/typeorm-cover.png",
+  "publishOn": "2026-06-15T10:00:00.000Z",
+  "tags": [],
+  "metaOption": {
+    "metaValue": "{\"seo\":{\"index\":true,\"priority\":0.7},\"keywords\":[\"typeorm\",\"database\",\"nestjs\"]}"
+  },
+  "authorEmail": "john.doe@example.com"
+}
+
+### Create minimal post with testing tag (John Doe) - use for PUT/PATCH testing
+POST http://localhost:8000/v1/posts
+Content-Type: application/json
+
+{
+  "title": "Test Post for Mutation Operations",
+  "postType": "post",
+  "slug": "test-post-for-mutations",
+  "status": "draft",
+  "publishOn": "2026-06-15T10:00:00.000Z",
+  "tags": [
+    "https://example.com/tags/testing"
+  ],
+  "metaOption": {
+    "metaValue": "{\"seo\":{\"index\":true,\"priority\":0.5},\"keywords\":[\"testing\",\"nestjs\"]}"
+  },
+  "authorEmail": "john.doe@example.com"
+}
+
+### Create temporary post (John Doe) with tags and metaOption - delete after testing
+POST http://localhost:8000/v1/posts
+Content-Type: application/json
+
+{
+  "title": "Temporary Post To Delete",
+  "postType": "post",
+  "slug": "temporary-post-to-delete-john",
+  "status": "draft",
+  "content": "This post is only for delete endpoint testing.",
+  "publishOn": "2026-06-20T10:00:00.000Z",
+  "tags": [
+    "https://example.com/tags/testing",
+    "https://example.com/tags/rest-api"
+  ],
+  "metaOption": {
+    "metaValue": "{\"seo\":{\"index\":false,\"priority\":0.3},\"keywords\":[\"temporary\",\"delete-test\",\"nestjs\"]}"
+  },
+  "authorEmail": "john.doe@example.com"
 }

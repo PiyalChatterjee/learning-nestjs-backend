@@ -1,7 +1,16 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+} from '@nestjs/common';
 import { TagsService } from './providers/tags.service';
 import { PostTagDto } from './dtos/post-tag.dto';
 import { formatTag } from '../../helpers/format-tag.helper';
+import { formatPostSummary } from '../../helpers/format-post-summary.helper';
 
 /**
  * Handles HTTP operations for tags.
@@ -32,5 +41,25 @@ export class TagsController {
   public async getAllTags() {
     const tags = await this.tagsService.getAllTags();
     return tags.map(formatTag);
+  }
+
+  /**
+   * Returns a single tag with all associated posts.
+   */
+  @Get(':id')
+  public async getTagWithPosts(@Param('id', ParseIntPipe) id: number) {
+    const { tag, posts } = await this.tagsService.getTagWithPosts(id);
+    return {
+      ...formatTag(tag),
+      posts: posts.map(formatPostSummary),
+    };
+  }
+
+  /**
+   * Soft-deletes a tag by id.
+   */
+  @Delete(':id')
+  public async deleteTag(@Param('id', ParseIntPipe) id: number) {
+    return this.tagsService.deleteTag(id);
   }
 }

@@ -3,9 +3,11 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  ManyToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Post } from '../posts/post.entity';
 
 /**
  * Persistence model for reusable post tags.
@@ -67,4 +69,7 @@ export class Tag {
   /** * Date when the tag was deleted. */
   @DeleteDateColumn()
   deleteDate: Date | null;
+
+  @ManyToMany(() => Post, (post) => post.tags)
+  posts: Post[];
 }

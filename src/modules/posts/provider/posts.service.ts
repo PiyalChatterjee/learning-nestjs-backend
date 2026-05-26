@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreatePostDto } from '../dtos/create-post.dto';
 import { PatchPostDto } from '../dtos/patch-post.dto';
 import { UpdatePostDto } from '../dtos/update-post.dto';
@@ -36,9 +36,7 @@ export class PostsService {
    */
   public async getAllPosts() {
     // fetch all posts from the database
-    const posts = await this.postRepository.find({
-      relations: ['author', 'metaValue'],
-    });
+    const posts = await this.postRepository.find();
 
     // format posts with author details
     return posts.map((post) => formatPostWithAuthor(post));
@@ -50,10 +48,7 @@ export class PostsService {
   public async getPostById(postId: number) {
     // fetch the post or throw 404 if not found
     const post = assertResourceExists(
-      await this.postRepository.findOne({
-        where: { id: postId },
-        relations: ['author', 'metaValue'],
-      }),
+      await this.postRepository.findOne({ where: { id: postId } }),
       'Post',
       postId,
     );
@@ -66,14 +61,13 @@ export class PostsService {
    */
   public async createPost(createPostDto: CreatePostDto) {
     // look up the author by email
-    const author = await this.userRepository.findOne({
-      where: { email: createPostDto.authorEmail },
-    });
-    if (!author) {
-      throw new NotFoundException(
-        `Author with email ${createPostDto.authorEmail} not found`,
-      );
-    }
+    const author = assertResourceExists(
+      await this.userRepository.findOne({
+        where: { email: createPostDto.authorEmail },
+      }),
+      'Author',
+      createPostDto.authorEmail,
+    );
 
     // extract authorEmail and metaOption from DTO
     const { authorEmail, metaOption, tags = [], ...postData } = createPostDto;
@@ -107,10 +101,7 @@ export class PostsService {
   public async updatePost(postId: number, updatePostDto: UpdatePostDto) {
     // fetch the post or throw 404 if not found
     const post = assertResourceExists(
-      await this.postRepository.findOne({
-        where: { id: postId },
-        relations: ['author', 'metaValue'],
-      }),
+      await this.postRepository.findOne({ where: { id: postId } }),
       'Post',
       postId,
     );
@@ -150,10 +141,7 @@ export class PostsService {
   public async patchPost(postId: number, patchPostDto: PatchPostDto) {
     // fetch the post or throw 404 if not found
     const post = assertResourceExists(
-      await this.postRepository.findOne({
-        where: { id: postId },
-        relations: ['author', 'metaValue'],
-      }),
+      await this.postRepository.findOne({ where: { id: postId } }),
       'Post',
       postId,
     );
@@ -189,11 +177,8 @@ export class PostsService {
       throw error;
     }
 
-    // reload author relation and return formatted response
-    const updatedPost = await this.postRepository.findOne({
-      where: { id: post.id },
-      relations: ['author', 'metaValue'],
-    });
+    // reload post to get eager relations after save
+    const updatedPost = await this.postRepository.findOne({ where: { id: post.id } });
     return formatPostWithAuthor(updatedPost);
   }
 
@@ -203,17 +188,10 @@ export class PostsService {
   public async deletePost(postId: number) {
     // fetch the post or throw 404 if not found
     const post = assertResourceExists(
-      await this.postRepository.findOne({
-        where: { id: postId },
-        relations: ['author', 'metaValue'],
-      }),
+      await this.postRepository.findOne({ where: { id: postId } }),
       'Post',
       postId,
     );
-
-    if (post.metaValue) {
-      await this.metaOptionRepository.remove(post.metaValue);
-    }
 
     await this.postRepository.remove(post);
 

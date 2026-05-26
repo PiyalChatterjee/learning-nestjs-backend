@@ -50,3 +50,12 @@ Content-Type: application/json
   "name": "Testing",
   "slug": "https://example.com/tags/testing"
 }
+
+
+POST http://localhost:8000/v1/tags
+Content-Type: application/json
+
+{
+  "name": "Testing Deletion",
+  "slug": "https://example.com/tags/testing-deletion"
+}

@@ -1,3 +1,14 @@
+### Add meta option to post 9 (John Doe - test post)
+PATCH http://localhost:8000/v1/posts/9
+Content-Type: application/json
+
+{
+  "metaOption": {
+    "metaValue": "{\"seo\":{\"index\":true,\"priority\":0.5},\"keywords\":[\"testing\",\"nestjs\"]}"
+  }
+}
+
+### Full patch example (update title, status, tags)
 PATCH http://localhost:8000/v1/posts/1
 Content-Type: application/json
 
@@ -11,15 +22,10 @@ Content-Type: application/json
   "featuredImageUrl": "https://example.com/images/post-cover-updated.png",
   "publishOn": "2026-06-15T10:00:00.000Z",
   "tags": [
-    "nestjs",
-    "backend",
-    "typescript",
-    "update"
+    "https://example.com/tags/nestjs",
+    "https://example.com/tags/typescript"
   ],
-  "metaOptions": [
-    {
-      "key": "canonicalUrl",
-      "value": "https://example.com/posts/getting-started-with-nestjs-updated"
-    }
-  ]
+  "metaOption": {
+    "metaValue": "{\"seo\":{\"index\":true,\"priority\":0.8},\"keywords\":[\"nestjs\",\"backend\"]}"
+  }
 }

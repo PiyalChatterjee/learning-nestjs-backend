@@ -109,7 +109,7 @@ export class Post {
   /**
    * Optional list of tag labels.
    */
-  @ManyToMany(() => Tag, { eager: true })
+  @ManyToMany(() => Tag, (tag) => tag.posts, { eager: true, onDelete: 'CASCADE' })
   @JoinTable({ name: 'post_tags' })
   tags: Tag[];
 
@@ -117,15 +117,18 @@ export class Post {
    * One-to-one relationship with meta options for storing additional metadata as JSON.
    * Automatically loaded with the post (eager: true) and persisted/deleted together (cascade: true).
    */
-  @OneToOne(() => MetaOption, { nullable: true, eager: true, cascade: true })
-  @JoinColumn({ name: 'meta_option_id' })
+  @OneToOne(() => MetaOption, (metaOption) => metaOption.post, {
+    nullable: true,
+    eager: true,
+    cascade: true,
+  })
   metaValue: MetaOption | null;
 
   /**
    * User who authored the post.
    * Requires explicit loading via relations: ['author'] (eager: false).
    */
-  @ManyToOne(() => User, { nullable: false, eager: false })
+  @ManyToOne(() => User, { nullable: false, eager: true })
   @JoinColumn({ name: 'author_id' })
   author: User;
 }

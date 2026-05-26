@@ -2,9 +2,12 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Post } from '../posts/post.entity';
 
 /**
  * Persistence model for post metadata options.
@@ -29,4 +32,8 @@ export class MetaOption {
   /** * Date when the meta option was last updated. */
   @UpdateDateColumn()
   updateDate: Date;
+
+  @OneToOne(() => Post, (post) => post.metaValue, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'post_id' })
+  post: Post;
 }

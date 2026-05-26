@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TagsService } from './tags.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Tag } from '../tag.entity';
+import { Post } from '../../posts/post.entity';
 
 describe('TagsService', () => {
   let service: TagsService;
@@ -12,6 +13,10 @@ describe('TagsService', () => {
         TagsService,
         {
           provide: getRepositoryToken(Tag),
+          useValue: {},
+        },
+        {
+          provide: getRepositoryToken(Post),
           useValue: {},
         },
       ],

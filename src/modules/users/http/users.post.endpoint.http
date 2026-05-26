@@ -1,3 +1,4 @@
+### Create Jane Doe
 POST http://localhost:8000/v1/users
 Content-Type: application/json
 
@@ -6,4 +7,15 @@ Content-Type: application/json
     "lastName": "Doe",
     "email": "jane.doe@example.com",
     "password": "SecurePassword123!"
+}
+
+### Create John Doe
+POST http://localhost:8000/v1/users
+Content-Type: application/json
+
+{
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "password": "P@ssw0rd!"
 }
