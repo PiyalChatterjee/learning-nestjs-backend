@@ -162,6 +162,52 @@ findAll(@Query('page') page: number = 1) {
 - This is a **DB-level FK constraint** — it only takes effect after generating and running a migration.
 - Does NOT delete `Post` rows — only cleans up the junction table link.
 
+## 2026-05-26 - Jest globals unresolved in e2e test files
+
+### Symptom
+- In `test/app.e2e-spec.ts`, editor showed errors like:
+  - `Cannot find name 'describe'`
+  - `Cannot find name 'beforeAll'`
+  - `Cannot find name 'it'`
+
+### Root Cause
+- `tsconfig.json` only included `src/**/*.ts`, so files under `test/` were outside the active TS project in the editor.
+- Installing `@types/jest` alone was not enough for those out-of-project test files.
+
+### Change Made
+- Added `tsconfig.spec.json` at project root to include both `src/**/*.ts` and `test/**/*.ts`, with Jest/Node types.
+- Updated Jest transforms in `package.json` and `test/jest-e2e.json` to use `tsconfig.spec.json`.
+- Added `test/tsconfig.json` so files in `test/` are definitively picked up by a local TS project with Jest types.
+
+### Verification
+- Editor diagnostics now report no errors for `test/app.e2e-spec.ts`.
+- `npm run test` passed (11/11 test suites).
+- `npm run test:e2e` passed (1/1 test suite).
+
+### Lesson/Topic Context
+- `@types/jest` provides type definitions, but TypeScript must include the file in a project that loads those types.
+- For NestJS repos, a dedicated spec tsconfig plus a `test/tsconfig.json` can prevent Jest global-name errors in editor.
+
+## 2026-05-26 - Missing e2e Jest configuration file
+
+### Symptom
+- Running e2e tests would fail because `test/jest-e2e.json` was missing while `package.json` had `test:e2e` configured as `jest --config ./test/jest-e2e.json`.
+
+### Root Cause
+- E2E scaffolding files were not present in the project (`test/jest-e2e.json` and an e2e spec file).
+
+### Change Made
+- Added `test/jest-e2e.json` with ts-jest e2e config.
+- Added `test/app.e2e-spec.ts` with a minimal e2e test for current app behavior (`GET /` returns `404` when no root route exists).
+
+### Verification
+- Ran `npm run test:e2e` successfully.
+- Result: `1 passed, 1 total`.
+
+### Lesson/Topic Context
+- If `test:e2e` uses `--config ./test/jest-e2e.json`, that file must exist or Jest cannot start.
+- Keep a minimal e2e spec in place so e2e setup can be validated early, even before business routes are added.
+
 ## 2026-05-17 - Jest globals not recognized in spec files
 
 ### Symptom
