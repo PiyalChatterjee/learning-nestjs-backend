@@ -745,3 +745,29 @@ findAll(@Query('page') page: number = 1) {
 ### Lesson/Topic Context
 - Use `softRemove`/`softDelete` where `@DeleteDateColumn` exists and you want logical deletion.
 - Deleting a `Post` should not delete `Tag` rows; manage relation links separately from tag lifecycle.
+
+## 2026-05-26 - TagsService dependency injection failed for PostRepository
+
+### Symptom
+- App failed to bootstrap with:
+  - `UnknownDependenciesException: Nest can't resolve dependencies of the TagsService (TagRepository, ?)`
+  - Missing `PostRepository` provider in `TagsModule`.
+
+### Root Cause
+- `TagsService` constructor injects both `Tag` and `Post` repositories.
+- `TagsModule` only registered `TypeOrmModule.forFeature([Tag])`, so `PostRepository` token was unavailable.
+
+### Change Made
+- Updated [src/modules/tags/tags.module.ts](src/modules/tags/tags.module.ts):
+  - Added `Post` import from posts entity.
+  - Changed `TypeOrmModule.forFeature([Tag])` to `TypeOrmModule.forFeature([Tag, Post])`.
+
+### Verification
+- TypeScript diagnostics: no errors in tags module/service files.
+- Focused tests passed:
+  - `src/modules/tags/providers/tags.service.spec.ts`
+  - `src/modules/tags/tags.controller.spec.ts`
+
+### Lesson/Topic Context
+- Every repository injected with `@InjectRepository(Entity)` must have its entity listed in the same module's `TypeOrmModule.forFeature([...])`.
+- This DI registration change does not alter entity relationship direction; it only provides repository tokens to Nest.
