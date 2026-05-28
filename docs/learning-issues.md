@@ -1,5 +1,32 @@
 # Learning Issues Log
 
+## Quick Notes (Fast Reference)
+
+### Exception Handlers Summary
+1. **NotFound (404)** - `not-found.helper.ts` - Resource existence checks
+2. **Conflict (409)** - `unique-constraint.helper.ts` - Database constraint violations
+3. **BadRequest (400)** - `bad-request.helper.ts` - Validation errors, email format, password strength
+4. **RequestTimeout (408)** - `request-timeout.helper.ts` - ECONNABORTED, ETIMEDOUT, deadlocks
+5. **Unauthorized (401)** - `unauthorized.helper.ts` - JWT validation, missing/invalid tokens, auth failures
+   - `assertTokenExists()` - Validates token presence
+   - `assertUserAuthenticated()` - Validates user auth status
+6. **Forbidden (403)** - `forbidden.helper.ts` - Permission/role checks, resource ownership
+   - `assertUserHasRole()` - Role validation
+   - `assertResourceOwnership()` - Owner check
+   - `assertMinimumRoleLevel()` - Role hierarchy (admin > moderator > user)
+7. **Service Unavailable (503)** - `service-unavailable.helper.ts` - DB/service down (ECONNREFUSED, ENOTFOUND, pool exhausted)
+8. **Internal Server Error (500)** - `internal-error.helper.ts` - Unexpected errors with logging
+   - `throwIfUnexpectedError()` - Logs details, returns generic message
+   - `handleAsyncError()` - Wraps async ops with error handling
+   - `logAndRethrow()` - Logs while preserving exception type
+
+### Integration Status
+✅ **UsersService** - All 6 methods wrapped (create, getAll, getById, update, patch, delete)
+✅ **PostsService** - All 6 methods wrapped (getAll, getById, create, update, patch, delete)
+✅ **TagsService** - All 4 methods wrapped (create, getAll, getWithPosts, delete)
+✅ **MetaOptionsService** - 1 method wrapped (create)
+✅ **AuthService** - Enhanced login & isAuthenticated with auth exceptions
+
 ## Issue Entry Rule (Use For Every New Issue)
 
 Capture the following fields every time:

@@ -4,6 +4,10 @@ import { UpdateUserDto } from '../dtos/update-user.dto';
 import { PatchUserDto } from '../dtos/patch-user.dto';
 import { AuthService } from '../../auth/provider/auth.service';
 import { assertResourceExists } from '../../../common/exceptions/not-found.helper';
+import { throwIfRequestTimeout } from '../../../common/exceptions/request-timeout.helper';
+import { validateEmail, validatePasswordStrength } from '../../../common/exceptions/bad-request.helper';
+import { throwIfServiceUnavailable } from '../../../common/exceptions/service-unavailable.helper';
+import { throwIfUnexpectedError } from '../../../common/exceptions/internal-error.helper';
 import { Repository } from 'typeorm';
 import { User } from '../user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -58,146 +62,288 @@ export class UsersService {
    * Creates a new user record.
    */
   public async createUser(createUserDto: CreateUserDto) {
-    // check if email already exists
-    const existingUser = await this.userRepository.findOne({
-      where: { email: createUserDto.email },
-    });
-    if (existingUser) {
-      throw new ConflictException('Email already in use');
+    try {
+      // validate email format
+      validateEmail(createUserDto.email);
+
+      // validate password strength
+      validatePasswordStrength(createUserDto.password);
+
+      // check if email already exists
+      const existingUser = await this.userRepository.findOne({
+        where: { email: createUserDto.email },
+      });
+      if (existingUser) {
+        throw new ConflictException('Email already in use');
+      }
+
+      // configure the user entity 
+      const { firstName, lastName, email, password } = createUserDto;
+      const user = this.userRepository.create({
+        firstName,
+        lastName,
+        email,
+        password,
+      });
+
+      // save the user to the database
+      await this.userRepository.save(user);
+      return user;
+    } catch (error) {
+      throwIfServiceUnavailable(error, {
+        message: 'Cannot create user at this moment',
+        serviceName: 'database',
+        shouldLog: true,
+      });
+      throwIfRequestTimeout(error, {
+        message: 'Failed to create user',
+        context: 'database query',
+      });
+      throwIfUnexpectedError(error, {
+        userMessage: 'Failed to create user',
+        context: 'user-creation',
+        originalError: error,
+      });
+      throw error;
     }
-
-    // configure the user entity 
-    const { firstName, lastName, email, password } = createUserDto;
-    const user = this.userRepository.create({
-      firstName,
-      lastName,
-      email,
-      password,
-    });
-
-    // save the user to the database
-    await this.userRepository.save(user);
-    return user;
   }
 
   /**
    * Returns a paginated list of users.
    */
   public async getAllUsers(limit: number, page: number) {
-    // verify the caller is authenticated
-    const isAuthenticated = this.authService.isAuthenticated('SAMPLE_TOKEN');
-    if (!isAuthenticated) {
-      throw new Error('Unauthorized');
+    try {
+      // verify the caller is authenticated
+      const isAuthenticated = this.authService.isAuthenticated('SAMPLE_TOKEN');
+      if (!isAuthenticated) {
+        throw new Error('Unauthorized');
+      }
+
+      // calculate pagination offset and fetch the page from the database
+      const offset = (page - 1) * limit;
+      const users = await this.userRepository.find({
+        skip: offset,
+        take: limit,
+      });
+
+      // shape and return the response
+      return users.map((user) => ({
+        id: user.id,
+        name: `${user.firstName} ${user.lastName ?? ''}`.trim(),
+        email: user.email,
+      }));
+    } catch (error) {
+      throwIfServiceUnavailable(error, {
+        message: 'Cannot fetch users at this moment',
+        serviceName: 'database',
+        shouldLog: true,
+      });
+      throwIfRequestTimeout(error, {
+        message: 'Failed to fetch users',
+        context: 'database query',
+      });
+      throwIfUnexpectedError(error, {
+        userMessage: 'Failed to fetch users',
+        context: 'user-fetch',
+        originalError: error,
+      });
+      throw error;
     }
-
-    // calculate pagination offset and fetch the page from the database
-    const offset = (page - 1) * limit;
-    const users = await this.userRepository.find({
-      skip: offset,
-      take: limit,
-    });
-
-    // shape and return the response
-    return users.map((user) => ({
-      id: user.id,
-      name: `${user.firstName} ${user.lastName ?? ''}`.trim(),
-      email: user.email,
-    }));
   }
 
   /**
    * Returns one user by id.
    */
   public async getUserById(id: number) {
-    // verify the caller is authenticated
-    const isAuthenticated = this.authService.isAuthenticated('SAMPLE_TOKEN');
-    if (!isAuthenticated) {
-      throw new Error('Unauthorized');
+    try {
+      // verify the caller is authenticated
+      const isAuthenticated = this.authService.isAuthenticated('SAMPLE_TOKEN');
+      if (!isAuthenticated) {
+        throw new Error('Unauthorized');
+      }
+
+      // fetch the user or throw 404 if not found
+      const user = assertResourceExists(
+        await this.userRepository.findOne({ where: { id } }),
+        'User',
+        id,
+      );
+
+      // shape and return the response
+      return {
+        id: user.id,
+        name: `${user.firstName} ${user.lastName ?? ''}`.trim(),
+        email: user.email,
+      };
+    } catch (error) {
+      throwIfServiceUnavailable(error, {
+        message: 'Cannot fetch user at this moment',
+        serviceName: 'database',
+        shouldLog: true,
+      });
+      throwIfRequestTimeout(error, {
+        message: 'Failed to fetch user',
+        context: 'database query',
+      });
+      throwIfUnexpectedError(error, {
+        userMessage: 'Failed to fetch user',
+        context: 'user-fetch-by-id',
+        originalError: error,
+      });
+      throw error;
     }
-
-    // fetch the user or throw 404 if not found
-    const user = assertResourceExists(
-      await this.userRepository.findOne({ where: { id } }),
-      'User',
-      id,
-    );
-
-    // shape and return the response
-    return {
-      id: user.id,
-      name: `${user.firstName} ${user.lastName ?? ''}`.trim(),
-      email: user.email,
-    };
   }
 
   /**
    * Replaces a user record with full update values.
    */
   public async updateUser(id: number, updateUserDto: UpdateUserDto) {
-    // fetch the user or throw 404 if not found
-    const user = assertResourceExists(
-      await this.userRepository.findOne({ where: { id } }),
-      'User',
-      id,
-    );
+    try {
+      // validate email format if provided
+      validateEmail(updateUserDto.email);
 
-    // apply all fields from the update payload
-    const { firstName, lastName, email } = updateUserDto;
-    user.firstName = firstName;
-    user.lastName = lastName;
-    user.email = email;
+      // fetch the user or throw 404 if not found
+      const user = assertResourceExists(
+        await this.userRepository.findOne({ where: { id } }),
+        'User',
+        id,
+      );
 
-    // persist changes and return the updated record
-    await this.userRepository.save(user);
-    return {
-      id: user.id,
-      name: `${user.firstName} ${user.lastName ?? ''}`.trim(),
-      email: user.email,
-    };
+      // check if new email is already in use by another user
+      if (updateUserDto.email && updateUserDto.email !== user.email) {
+        const existingUser = await this.userRepository.findOne({
+          where: { email: updateUserDto.email },
+        });
+        if (existingUser) {
+          throw new ConflictException('Email already in use');
+        }
+      }
+
+      // apply all fields from the update payload
+      const { firstName, lastName, email } = updateUserDto;
+      user.firstName = firstName;
+      user.lastName = lastName;
+      user.email = email;
+
+      // persist changes and return the updated record
+      await this.userRepository.save(user);
+      return {
+        id: user.id,
+        name: `${user.firstName} ${user.lastName ?? ''}`.trim(),
+        email: user.email,
+      };
+    } catch (error) {
+      throwIfServiceUnavailable(error, {
+        message: 'Cannot update user at this moment',
+        serviceName: 'database',
+        shouldLog: true,
+      });
+      throwIfRequestTimeout(error, {
+        message: 'Failed to update user',
+        context: 'database query',
+      });
+      throwIfUnexpectedError(error, {
+        userMessage: 'Failed to update user',
+        context: 'user-update',
+        originalError: error,
+      });
+      throw error;
+    }
   }
 
   /**
    * Updates selected fields on a user record.
    */
   public async patchUser(id: number, patchUserDto: PatchUserDto) {
-    // fetch the user or throw 404 if not found
-    const user = assertResourceExists(
-      await this.userRepository.findOne({ where: { id } }),
-      'User',
-      id,
-    );
+    try {
+      // validate email format if provided
+      if (patchUserDto.email) {
+        validateEmail(patchUserDto.email);
+      }
 
-    // strip undefined fields so only provided values are applied
-    const partialPayload = Object.fromEntries(
-      Object.entries(patchUserDto).filter(([, value]) => value !== undefined),
-    );
+      // fetch the user or throw 404 if not found
+      const user = assertResourceExists(
+        await this.userRepository.findOne({ where: { id } }),
+        'User',
+        id,
+      );
 
-    // merge partial fields and persist the updated record
-    Object.assign(user, partialPayload);
-    await this.userRepository.save(user);
-    return {
-      id: user.id,
-      name: `${user.firstName} ${user.lastName ?? ''}`.trim(),
-      email: user.email,
-    };
+      // check if new email is already in use by another user (if email is being updated)
+      if (patchUserDto.email && patchUserDto.email !== user.email) {
+        const existingUser = await this.userRepository.findOne({
+          where: { email: patchUserDto.email },
+        });
+        if (existingUser) {
+          throw new ConflictException('Email already in use');
+        }
+      }
+
+      // strip undefined fields so only provided values are applied
+      const partialPayload = Object.fromEntries(
+        Object.entries(patchUserDto).filter(([, value]) => value !== undefined),
+      );
+
+      // merge partial fields and persist the updated record
+      Object.assign(user, partialPayload);
+      await this.userRepository.save(user);
+      return {
+        id: user.id,
+        name: `${user.firstName} ${user.lastName ?? ''}`.trim(),
+        email: user.email,
+      };
+    } catch (error) {
+      throwIfServiceUnavailable(error, {
+        message: 'Cannot patch user at this moment',
+        serviceName: 'database',
+        shouldLog: true,
+      });
+      throwIfRequestTimeout(error, {
+        message: 'Failed to patch user',
+        context: 'database query',
+      });
+      throwIfUnexpectedError(error, {
+        userMessage: 'Failed to patch user',
+        context: 'user-patch',
+        originalError: error,
+      });
+      throw error;
+    }
   }
 
   /**
    * Removes a user by id.
    */
   public async deleteUser(id: number) {
-    // fetch the user or throw 404 if not found
-    const user = assertResourceExists(
-      await this.userRepository.findOne({ where: { id } }),
-      'User',
-      id,
-    );
+    try {
+      // fetch the user or throw 404 if not found
+      const user = assertResourceExists(
+        await this.userRepository.findOne({ where: { id } }),
+        'User',
+        id,
+      );
 
-    // remove the record from the database
-    await this.userRepository.remove(user);
+      // remove the record from the database
+      await this.userRepository.remove(user);
 
-    return {
-      message: `User with id ${id} deleted successfully`,
-    };
+      return {
+        message: `User with id ${id} deleted successfully`,
+      };
+    } catch (error) {
+      throwIfServiceUnavailable(error, {
+        message: 'Cannot delete user at this moment',
+        serviceName: 'database',
+        shouldLog: true,
+      });
+      throwIfRequestTimeout(error, {
+        message: 'Failed to delete user',
+        context: 'database query',
+      });
+      throwIfUnexpectedError(error, {
+        userMessage: 'Failed to delete user',
+        context: 'user-delete',
+        originalError: error,
+      });
+      throw error;
+    }
   }
 }

@@ -5,6 +5,9 @@ import { Post } from '../../posts/post.entity';
 import { Repository } from 'typeorm';
 import { PostTagDto } from '../dtos/post-tag.dto';
 import { assertResourceExists } from '../../../common/exceptions/not-found.helper';
+import { throwIfRequestTimeout } from '../../../common/exceptions/request-timeout.helper';
+import { throwIfServiceUnavailable } from '../../../common/exceptions/service-unavailable.helper';
+import { throwIfUnexpectedError } from '../../../common/exceptions/internal-error.helper';
 
 /**
  * Handles persistence operations for tags.
@@ -30,23 +33,59 @@ export class TagsService {
      * Creates and persists a tag entity.
      */
     public async createTag(postTagDto: PostTagDto) {
-        /**
-         * Create a new Tag instance with the provided name and persist it to the database.
-         * Returns the saved entity with generated database identifiers.
-         */
-        const tag = this.tagRepository.create(postTagDto);
-        await this.tagRepository.save(tag);
-        return tag;
+        try {
+            /**
+             * Create a new Tag instance with the provided name and persist it to the database.
+             * Returns the saved entity with generated database identifiers.
+             */
+            const tag = this.tagRepository.create(postTagDto);
+            await this.tagRepository.save(tag);
+            return tag;
+        } catch (error) {
+            throwIfServiceUnavailable(error, {
+                message: 'Cannot create tag at this moment',
+                serviceName: 'database',
+                shouldLog: true,
+            });
+            throwIfRequestTimeout(error, {
+                message: 'Failed to create tag',
+                context: 'database query',
+            });
+            throwIfUnexpectedError(error, {
+                userMessage: 'Failed to create tag',
+                context: 'tag-creation',
+                originalError: error,
+            });
+            throw error;
+        }
     }
 
     /**
      * Returns all tags from storage.
      */
     public async getAllTags() {
-        /**
-         * Fetches all tags from the database and returns them as an array.
-         */
-        return this.tagRepository.find();
+        try {
+            /**
+             * Fetches all tags from the database and returns them as an array.
+             */
+            return this.tagRepository.find();
+        } catch (error) {
+            throwIfServiceUnavailable(error, {
+                message: 'Cannot fetch tags at this moment',
+                serviceName: 'database',
+                shouldLog: true,
+            });
+            throwIfRequestTimeout(error, {
+                message: 'Failed to fetch tags',
+                context: 'database query',
+            });
+            throwIfUnexpectedError(error, {
+                userMessage: 'Failed to fetch tags',
+                context: 'tag-fetch-all',
+                originalError: error,
+            });
+            throw error;
+        }
     }
 
     /**
@@ -55,35 +94,71 @@ export class TagsService {
      * a circular join cycle caused by eager Post.tags pointing back to Tag.
      */
     public async getTagWithPosts(tagId: number) {
-        const tag = assertResourceExists(
-            await this.tagRepository.findOne({ where: { id: tagId } }),
-            'Tag',
-            tagId,
-        );
+        try {
+            const tag = assertResourceExists(
+                await this.tagRepository.findOne({ where: { id: tagId } }),
+                'Tag',
+                tagId,
+            );
 
-        const posts = await this.postRepository
-            .createQueryBuilder('post')
-            .innerJoin('post.tags', 'tag', 'tag.id = :tagId', { tagId })
-            .leftJoinAndSelect('post.author', 'author')
-            .getMany();
+            const posts = await this.postRepository
+                .createQueryBuilder('post')
+                .innerJoin('post.tags', 'tag', 'tag.id = :tagId', { tagId })
+                .leftJoinAndSelect('post.author', 'author')
+                .getMany();
 
-        return { tag, posts };
+            return { tag, posts };
+        } catch (error) {
+            throwIfServiceUnavailable(error, {
+                message: 'Cannot fetch tag at this moment',
+                serviceName: 'database',
+                shouldLog: true,
+            });
+            throwIfRequestTimeout(error, {
+                message: 'Failed to fetch tag with posts',
+                context: 'database query',
+            });
+            throwIfUnexpectedError(error, {
+                userMessage: 'Failed to fetch tag',
+                context: 'tag-fetch-with-posts',
+                originalError: error,
+            });
+            throw error;
+        }
     }
 
     /**
      * Soft-deletes a tag by id using the DeleteDateColumn field.
      */
     public async deleteTag(tagId: number) {
-        const tag = assertResourceExists(
-            await this.tagRepository.findOne({ where: { id: tagId } }),
-            'Tag',
-            tagId,
-        );
+        try {
+            const tag = assertResourceExists(
+                await this.tagRepository.findOne({ where: { id: tagId } }),
+                'Tag',
+                tagId,
+            );
 
-        await this.tagRepository.softRemove(tag);
+            await this.tagRepository.softRemove(tag);
 
-        return {
-            message: `Tag with id ${tagId} deleted successfully`,
-        };
+            return {
+                message: `Tag with id ${tagId} deleted successfully`,
+            };
+        } catch (error) {
+            throwIfServiceUnavailable(error, {
+                message: 'Cannot delete tag at this moment',
+                serviceName: 'database',
+                shouldLog: true,
+            });
+            throwIfRequestTimeout(error, {
+                message: 'Failed to delete tag',
+                context: 'database query',
+            });
+            throwIfUnexpectedError(error, {
+                userMessage: 'Failed to delete tag',
+                context: 'tag-delete',
+                originalError: error,
+            });
+            throw error;
+        }
     }
 }
