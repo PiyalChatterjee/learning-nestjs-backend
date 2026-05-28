@@ -60,6 +60,59 @@ Capture the following fields every time:
 
 ---
 
+## 2026-05-29 - Keep Nest Server Running When PostgreSQL Is Down
+
+### Symptom
+- Stopping PostgreSQL caused Nest startup to fail with repeated TypeORM connection retries and app crash.
+- After enabling non-blocking startup, API calls returned 500 with `No metadata for "User" was found` instead of a 503.
+
+### Root Cause
+- TypeORM initialization was happening during module bootstrap, so DB-down state blocked app startup.
+- With manual DB initialization enabled, repository calls threw TypeORM metadata/initialization errors that were not included in the existing 503 detection patterns.
+
+### Change Made
+- Updated [src/app.module.ts](src/app.module.ts) TypeORM options to use `manualInitialization: true` so HTTP server boot does not depend on initial DB availability.
+- Updated [src/common/exceptions/service-unavailable.helper.ts](src/common/exceptions/service-unavailable.helper.ts) to classify these additional runtime DB-down signals as service-unavailable:
+  - `datasource is not initialized`
+  - `data source is not initialized`
+  - `driver not connected`
+  - `no metadata for`
+  - `entitymetadatanotfounderror`
+
+### Verification
+- Confirmed PostgreSQL service is stopped.
+- Started app with `npm run start:dev`: Nest boot completed successfully and stayed running.
+- Called `GET /v1/users?limit=2&page=1` while DB was down: response is now `503 Service Unavailable` with message `Cannot fetch users at this moment (database). Please try again later.`
+
+### Lesson/Topic Context
+- For resilience, avoid hard coupling API process startup to database availability when learning or testing failure modes.
+- Map DB client/library-specific runtime errors to consistent HTTP responses (503 for transient infrastructure dependency failures).
+
+---
+
+## 2026-05-29 - Nest Dev Server Port Already In Use (EADDRINUSE)
+
+### Symptom
+- Running npm run start:dev showed successful module bootstrap logs, then crashed with:
+  - Error: listen EADDRINUSE: address already in use :::8000
+- This looked like app startup was broken.
+
+### Root Cause
+- Multiple Nest watch processes were started in different terminals.
+- One existing process was already bound to port 8000; subsequent starts failed when trying to listen on the same port.
+
+### Change Made
+- Identified the active listener process on port 8000 and kept a single running instance.
+- Confirmed API requests against the active process instead of launching parallel start:dev sessions.
+
+### Verification
+- Port 8000 had a single listener process.
+- GET /v1/users returned HTTP 200 once DB was running.
+
+### Lesson/Topic Context
+- EADDRINUSE is a process-management issue, not a Nest module wiring issue.
+- Before restarting, check port ownership and stop old listeners to keep one active dev server instance.
+
 ## 2026-05-29 - TypeScript Configuration: Deprecated Compiler Options
 
 ### Symptom

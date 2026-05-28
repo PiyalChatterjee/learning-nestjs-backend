@@ -74,6 +74,11 @@ export function throwIfServiceUnavailable(
     message.includes('connection timeout') ||
     message.includes('service unavailable') ||
     message.includes('database unavailable') ||
+    message.includes('datasource is not initialized') ||
+    message.includes('data source is not initialized') ||
+    message.includes('driver not connected') ||
+    message.includes('no metadata for') ||
+    message.includes('entitymetadatanotfounderror') ||
     message.includes('pool exhausted');
 
   if (!isUnavailable) {

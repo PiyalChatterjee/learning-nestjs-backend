@@ -14,6 +14,7 @@ import { AppDataSource } from './database/data-source';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import environmentValidationSchema from './config/environment.validation';
+import { DatabaseConnectionBootstrap } from './database/database-connection.bootstrap';
 
 /**
  * Root application module that wires feature modules and infrastructure.
@@ -56,10 +57,13 @@ const ENV_FILE_PATH = ENV ? `.env.${ENV}.local` : '.env';
         database: configService.get<string>('database.database', 'pip_learning_db'),
         synchronize: configService.get<string>('database.synchronize', 'true') === 'true',
         autoLoadEntities: true,
+        // Keep the HTTP server bootable even when DB is unavailable.
+        // DB errors are handled in service methods at request time.
+        manualInitialization: true,
       }),
     }),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, DatabaseConnectionBootstrap],
 })
 export class AppModule {}
