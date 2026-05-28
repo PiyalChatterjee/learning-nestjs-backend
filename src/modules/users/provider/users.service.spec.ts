@@ -3,6 +3,7 @@ import { UsersService } from './users.service';
 import { AuthService } from '../../auth/provider/auth.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../user.entity';
+import profileConfig from '../config/profile.config';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -19,6 +20,10 @@ describe('UsersService', () => {
           provide: getRepositoryToken(User),
           useValue: {},
         },
+        {
+          provide: profileConfig.KEY,
+          useValue: {},
+        },  
       ],
     }).compile();
 

@@ -11,6 +11,9 @@ import { TagsModule } from './modules/tags/tags.module';
 import { MetaOptionsModule } from './modules/meta-options/meta-options.module';
 // Database configuration
 import { AppDataSource } from './database/data-source';
+import appConfig from './config/app.config';
+import databaseConfig from './config/database.config';
+import environmentValidationSchema from './config/environment.validation';
 
 /**
  * Root application module that wires feature modules and infrastructure.
@@ -23,11 +26,17 @@ import { AppDataSource } from './database/data-source';
  *
  * See src/database/data-source.ts for the TypeORM CLI configuration used by migration commands.
  */
+
+const ENV = process.env.NODE_ENV;
+const ENV_FILE_PATH = ENV ? `.env.${ENV}.local` : '.env';
 @Module({
   imports: [
     // Loads environment variables from .env and exposes them application-wide.
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: ENV_FILE_PATH,
+      load: [databaseConfig, appConfig],
+      validationSchema: environmentValidationSchema, // Add Joi validation schema here if needed
     }),
     UsersModule,
     PostsModule,
@@ -40,12 +49,12 @@ import { AppDataSource } from './database/data-source';
       // Builds TypeORM options from environment variables.
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get<string>('DB_HOST', 'localhost'),
-        port: parseInt(configService.get<string>('DB_PORT', '5432'), 10),
-        username: configService.get<string>('DB_USERNAME', 'postgres'),
-        password: configService.get<string>('DB_PASSWORD', 'admin123'),
-        database: configService.get<string>('DB_NAME', 'pip_learning_db'),
-        synchronize: configService.get<string>('DB_SYNC', 'true') === 'true',
+        host: configService.get<string>('database.host', 'localhost'),
+        port: +(configService.get<string>('database.port', '5432')),
+        username: configService.get<string>('database.username', 'postgres'),
+        password: configService.get<string>('database.password', 'admin123'),
+        database: configService.get<string>('database.database', 'pip_learning_db'),
+        synchronize: configService.get<string>('database.synchronize', 'true') === 'true',
         autoLoadEntities: true,
       }),
     }),

@@ -162,6 +162,32 @@ findAll(@Query('page') page: number = 1) {
 - This is a **DB-level FK constraint** — it only takes effect after generating and running a migration.
 - Does NOT delete `Post` rows — only cleans up the junction table link.
 
+## 2026-05-26 - E2E failed after Jest rootDir change
+
+### Symptom
+- `npm run test:e2e` failed with:
+  - `File not found: <rootDir>/../tsconfig.spec.json`
+  - It resolved to `.../PIP/tsconfig.spec.json` (outside the project folder).
+
+### Root Cause
+- Jest configs were changed to root-directory mode, but `ts-jest` `tsconfig` path remained one-level-up (`<rootDir>/../tsconfig.spec.json`).
+- That path became invalid with the new `rootDir` values.
+
+### Change Made
+- Updated `package.json` Jest transform option:
+  - `"tsconfig": "<rootDir>/tsconfig.spec.json"`
+- Updated `test/jest-e2e.json` transform option:
+  - `"tsconfig": "<rootDir>/tsconfig.spec.json"`
+
+### Verification
+- Ran `npm run test` -> all 11 test suites passed.
+- Ran `npm run test:e2e` -> e2e suite passed.
+- Editor diagnostics show no errors for e2e config and spec files.
+
+### Lesson/Topic Context
+- When changing Jest `rootDir`, always recalculate `<rootDir>`-based paths in `ts-jest` config.
+- A previously valid relative path can become invalid immediately after rootDir changes.
+
 ## 2026-05-26 - Jest globals unresolved in e2e test files
 
 ### Symptom

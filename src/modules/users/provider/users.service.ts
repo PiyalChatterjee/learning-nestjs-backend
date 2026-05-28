@@ -7,6 +7,8 @@ import { assertResourceExists } from '../../../common/exceptions/not-found.helpe
 import { Repository } from 'typeorm';
 import { User } from '../user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import profileConfig from '../config/profile.config';
+import { ConfigType } from '@nestjs/config';
 
 /**
  * Internal representation of persisted user data.
@@ -38,12 +40,17 @@ export class UsersService {
   /**
    * Inject the AuthService into the UsersService using dependency injection. This allows us to use the methods defined in the AuthService to handle authentication-related logic in our user service, such as validating user credentials or checking if a user is authenticated before allowing access to certain user-related operations.
    * Inject User Repository to manage user data persistence and retrieval from the database. This allows us to perform CRUD operations on user entities using TypeORM's repository pattern, abstracting away the underlying database interactions and providing a clean interface for working with user data in our service.
+   * Inject profile configuration to access any profile-related settings defined in the application's configuration files. This allows us to utilize configuration values that may be necessary for user-related operations, such as API keys, feature flags, or other settings that can be defined in the profile configuration.
    */
   constructor(
     @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+
+    @Inject(profileConfig.KEY)
+    private readonly profileConfiguration: ConfigType<typeof profileConfig>,
+    
   ) {}
   // Service methods will go here, utilizing authService for authentication checks and userRepository for database operations.
 
