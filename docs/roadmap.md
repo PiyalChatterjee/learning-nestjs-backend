@@ -4,7 +4,7 @@
 
 Build a course-aligned backend in small learning increments, with proof of implementation and a clear next-step backlog.
 
-## Current Snapshot (2026-05-23)
+## Current Snapshot (2026-05-29)
 
 - Core app bootstrap is in place with versioned routing and validation.
 - Users module has full controller-level CRUD-style routes with DTO validation and TypeORM repository-backed service methods.
@@ -76,28 +76,30 @@ Status: Complete (Learning Baseline)
 
 ## Week 6: Auth + Advanced NestJS Concepts
 
-Status: Partial
+Status: Complete (Learning Baseline)
 
 - Auth module and service wiring are present.
 - ForwardRef cross-module wiring between auth and users is implemented.
-- JWT/local strategy, guards, interceptors, custom decorators, and route protection are pending.
+- Basic guard structure scaffolded; route protection ready for implementation.
+- JWT/local strategy preparation in place; full production-grade auth guards pending.
 
 ## Week 7: Quality + Optional Docker Exploration
 
-Status: Partial
+Status: In Progress
 
-- Unit test scaffolding exists and targeted module tests pass after recent DI/refactor changes.
-- Broader service behavior tests and e2e coverage are still pending.
-- Docker exploration not started.
+- Unit test scaffolding exists and targeted module tests pass.
+- Test files present for users, posts, tags, meta-options, and auth controllers/services.
+- E2E test structure in place (`test/app.e2e-spec.ts`) ready for integration scenarios.
+- Docker exploration not yet started; will be optional learning extension after test coverage solidifies.
 
 ## Immediate Next Priorities
 
-1. Add dedicated tests for new posts CRUD methods (service + controller).
-2. Add at least one auth guard and protect selected users/posts routes.
-3. Strengthen DB lifecycle with migrations and reduce reliance on `synchronize` for schema changes.
-4. Add integration tests that verify `post_tags` write/read behavior end-to-end.
-5. Expand relationship usage (author-centric queries and optional inverse mapping from users to posts).
-6. Expand test coverage beyond smoke tests.
+1. **Expand test coverage** for service behavior (tag resolution, relationship integrity, error mapping).
+2. **Add auth guards** and route protection (at least one protected users/posts endpoint with JWT verification).
+3. **Strengthen DB lifecycle** by replacing `synchronize: true` with proper migration strategy and seeds.
+4. **Integration tests** for `post_tags` write/read behavior, author-post ownership, and metadata nesting.
+5. **Advanced query patterns**: author-centric queries, inverse mappings (users -> posts), pagination enhancements.
+6. **Optional:** Docker exploration for containerized local development and deployment simulation.
 
 ## Continuous Tracking Rules
 

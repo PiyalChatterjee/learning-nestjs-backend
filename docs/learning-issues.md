@@ -31,6 +31,52 @@ Capture the following fields every time:
 -
 ```
 
+---
+
+## 2026-05-29 - TypeScript Configuration: Deprecated Compiler Options
+
+### Symptom
+TypeScript editor warnings about deprecated `baseUrl` and `moduleResolution: node10`.
+
+### Root Cause
+NestJS schematics template used deprecated TypeScript compiler options that are no longer recommended in modern TS versions.
+
+### Change Made
+- Removed `baseUrl` from `tsconfig.json` (no path aliases were in use).
+- Changed `moduleResolution` from `node10` to `node16`.
+- Changed `module` to `node16` to match moduleResolution.
+- Explicitly set `rootDir: ./src` for clarity.
+- Set `incremental: false` in `tsconfig.build.json` to prevent build cache issues with `deleteOutDir`.
+
+### Verification Result
+No editor warnings; clean build output; `dist/main.js` emits correctly after clean rebuild.
+
+### Lesson/Topic Context
+Modern TypeScript configuration requires alignment between `module` and `moduleResolution`. The incremental/deleteOutDir interaction is subtle: incremental caching can prevent re-emit if deleteOutDir removes intermediate files first.
+
+---
+
+## 2026-05-23 - TypeORM Many-to-Many Relationships: `@JoinTable` Pattern
+
+### Symptom
+Postgres junction table `post_tags` not appearing after entity relation decorator changes.
+
+### Root Cause
+Initially used `@JoinColumn` for many-to-many relation, which only works for one-to-one or many-to-one. Many-to-many requires `@JoinTable` to create a separate linking table.
+
+### Change Made
+- Updated post entity with `@ManyToMany(() => Tag)` on posts side.
+- Added `@JoinTable()` decorator to create `post_tags` junction table.
+- Added inverse relation `@ManyToMany(() => Post, post => post.tags)` on tag entity.
+
+### Verification Result
+Postgres synchronize creates `post_tags` table with `post_id` and `tag_id` foreign keys. Tags can be linked to multiple posts and vice versa.
+
+### Lesson/Topic Context
+Relation choice depends on cardinality:
+- `@JoinColumn` for 1:1 or M:1 (foreign key on current table).
+- `@JoinTable` for M:M (separate junction table needed).
+
 ## Quick Notes (Fast Reference)
 
 ### Q&A: Why `@JoinTable` for Tags but `@JoinColumn` for Author/MetaOption?
