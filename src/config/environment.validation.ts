@@ -1,6 +1,12 @@
 import * as Joi from 'joi';
 
-// Define a validation schema for environment variables using Joi
+/**
+ * Environment variable validation schema.
+ * Defines expected structure, types, and default values for all environment variables.
+ * Used by NestJS ConfigModule to validate and transform env configuration at startup.
+ *
+ * @type {Joi.ObjectSchema}
+ */
 export default Joi.object({
   NODE_ENV: Joi.string()
     .valid('development', 'production', 'test')
