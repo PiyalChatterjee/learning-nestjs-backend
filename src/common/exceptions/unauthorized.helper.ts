@@ -5,19 +5,29 @@ import { UnauthorizedException } from '@nestjs/common';
  */
 interface UnauthorizedOptions {
   /**
-   * User-facing error message.
+   * User-facing message returned in the 401 response body.
    */
   message: string;
 
   /**
-   * Optional context (e.g., 'JWT validation', 'credential verification').
+   * Optional description of the authentication step that failed (e.g., 'JWT validation', 'credential verification').
+   * Appended to the message in parentheses when provided.
    */
   context?: string;
 }
 
 /**
- * Throws UnauthorizedException when authentication fails.
- * Handles: missing tokens, invalid tokens, expired sessions, wrong credentials.
+ * Translates an authentication-related error into a 401 Unauthorized exception.
+ * Detects JWT errors, expired/invalid tokens, and failed credential patterns.
+ * Has no effect on errors that do not match auth patterns.
+ *
+ * Detected patterns:
+ * - Error name: `JsonWebTokenError`, `TokenError`
+ * - Message containing: 'invalid token', 'expired token', 'invalid signature', 'unauthorized', 'invalid credentials', 'authentication failed', 'jwt'
+ *
+ * @param error - The caught error to inspect.
+ * @param options - User-facing message and optional authentication context.
+ * @throws {UnauthorizedException} When an authentication failure pattern is detected.
  */
 export function throwIfUnauthorized(
   error: unknown,
@@ -53,7 +63,10 @@ export function throwIfUnauthorized(
 }
 
 /**
- * Validates that authentication token is provided and throws UnauthorizedException if missing.
+ * Validates that an authentication token is present and non-empty.
+ *
+ * @param token - The token string to check.
+ * @throws {UnauthorizedException} When the token is undefined, null, or blank.
  */
 export function assertTokenExists(token: string | undefined): void {
   if (!token || token.trim() === '') {
@@ -62,7 +75,11 @@ export function assertTokenExists(token: string | undefined): void {
 }
 
 /**
- * Validates that user is authenticated and throws UnauthorizedException if not.
+ * Validates that the current user is authenticated.
+ *
+ * @param isAuthenticated - Boolean result from an authentication check.
+ * @param context - Optional description of the operation being guarded.
+ * @throws {UnauthorizedException} When isAuthenticated is false.
  */
 export function assertUserAuthenticated(
   isAuthenticated: boolean,

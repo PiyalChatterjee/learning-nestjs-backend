@@ -5,24 +5,49 @@ import { ServiceUnavailableException } from '@nestjs/common';
  */
 interface ServiceUnavailableOptions {
   /**
-   * User-facing error message.
+   * User-facing message returned in the 503 response body.
    */
   message: string;
 
   /**
-   * Optional service name or context that is unavailable.
+   * Optional name of the service or resource that is unavailable (e.g., 'database', 'payment-service').
+   * Appended to the message in parentheses when provided.
    */
   serviceName?: string;
 
   /**
-   * Optional flag to enable error logging for monitoring.
+   * When true, logs the error to stderr via console.error for monitoring.
+   * Should be enabled in production service layers.
    */
   shouldLog?: boolean;
 }
 
 /**
- * Throws ServiceUnavailableException when external services/database are down.
- * Handles: connection failures, timeout to services, database unavailability.
+ * Translates a connectivity or service-down error into a 503 Service Unavailable exception.
+ * Has no effect on errors that do not match connectivity patterns.
+ *
+ * Detected patterns:
+ * - `ECONNREFUSED` — TCP connection refused (DB/service not running)
+ * - `EHOSTUNREACH` — Host unreachable (network partition)
+ * - `ENETUNREACH` — Network unreachable
+ * - `ENOTFOUND` — DNS resolution failure
+ * - Message containing: 'connection refused', 'unable to connect', 'connection timeout', 'service unavailable', 'database unavailable', 'pool exhausted'
+ *
+ * @param error - The caught error to inspect.
+ * @param options - User-facing message, optional service name, and logging flag.
+ * @throws {ServiceUnavailableException} When a connectivity failure pattern is detected.
+ *
+ * @example
+ * try {
+ *   await this.userRepository.find();
+ * } catch (error) {
+ *   throwIfServiceUnavailable(error, {
+ *     message: 'Cannot fetch users at this moment',
+ *     serviceName: 'database',
+ *     shouldLog: true,
+ *   });
+ *   throw error;
+ * }
  */
 export function throwIfServiceUnavailable(
   error: unknown,
@@ -68,7 +93,10 @@ export function throwIfServiceUnavailable(
 }
 
 /**
- * Validates database connection is available and throws ServiceUnavailableException if not.
+ * Validates that the database connection is active.
+ *
+ * @param isConnected - Boolean result from a connectivity check.
+ * @throws {ServiceUnavailableException} When isConnected is false.
  */
 export function assertDatabaseAvailable(
   isConnected: boolean,
@@ -81,7 +109,11 @@ export function assertDatabaseAvailable(
 }
 
 /**
- * Validates external service is reachable and throws ServiceUnavailableException if not.
+ * Validates that an external service is reachable.
+ *
+ * @param isReachable - Boolean result from a reachability check.
+ * @param serviceName - Human-readable name of the external service used in the error message.
+ * @throws {ServiceUnavailableException} When isReachable is false.
  */
 export function assertServiceReachable(
   isReachable: boolean,

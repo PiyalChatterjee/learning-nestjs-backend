@@ -1,7 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 
 /**
- * Validation error from class-validator
+ * Represents a single validation error produced by class-validator.
  */
 interface ValidationError {
   property: string;
@@ -14,20 +14,26 @@ interface ValidationError {
  */
 interface BadRequestOptions {
   /**
-   * Default message if no specific validation error is found.
+   * Fallback message used when no field-specific override matches.
    */
   defaultMessage: string;
 
   /**
-   * Optional field-specific error messages to override defaults.
-   * Example: { email: 'Email format is invalid', password: 'Password is too weak' }
+   * Field-specific messages keyed by the DTO property name.
+   * Overrides the first constraint message for matching fields.
+   *
+   * @example { email: 'Email format is invalid', password: 'Password is too weak' }
    */
   fieldMessages?: Record<string, string>;
 }
 
 /**
- * Throws BadRequestException when class-validator errors or validation patterns are detected.
- * Handles common validation scenarios: email format, password strength, field length, etc.
+ * Translates a class-validator error array or a message-pattern match into a 400 Bad Request exception.
+ * Has no effect on errors that do not match known validation patterns.
+ *
+ * @param error - The caught error to inspect. Can be a ValidationError array or any error object.
+ * @param options - Default message and optional per-field message overrides.
+ * @throws {BadRequestException} When a validation error pattern is detected.
  */
 export function throwIfValidationError(
   error: unknown,
@@ -73,7 +79,10 @@ export function throwIfValidationError(
 }
 
 /**
- * Validates email format and throws BadRequestException if invalid.
+ * Validates that the given string is a well-formed email address.
+ *
+ * @param email - The email string to validate.
+ * @throws {BadRequestException} When the email does not match the expected format.
  */
 export function validateEmail(email: string): void {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -83,12 +92,15 @@ export function validateEmail(email: string): void {
 }
 
 /**
- * Validates password strength according to policy:
- * - At least 8 characters
- * - At least one uppercase letter
- * - At least one lowercase letter
- * - At least one number
- * - At least one special character
+ * Validates password strength against the application's password policy:
+ * - Minimum 8 characters, maximum 64 characters.
+ * - At least one uppercase letter (A–Z).
+ * - At least one lowercase letter (a–z).
+ * - At least one digit (0–9).
+ * - At least one special character (non-alphanumeric).
+ *
+ * @param password - The plain-text password string to validate.
+ * @throws {BadRequestException} On the first policy rule that is violated.
  */
 export function validatePasswordStrength(password: string): void {
   if (!password || password.length < 8) {
@@ -127,7 +139,13 @@ export function validatePasswordStrength(password: string): void {
 }
 
 /**
- * Validates string field length and throws BadRequestException if invalid.
+ * Validates that a string field satisfies minimum and/or maximum length constraints.
+ *
+ * @param value - The string value to validate.
+ * @param fieldName - Human-readable field label used in error messages.
+ * @param minLength - Optional minimum allowed length (inclusive).
+ * @param maxLength - Optional maximum allowed length (inclusive).
+ * @throws {BadRequestException} When the value violates a length constraint.
  */
 export function validateFieldLength(
   value: string,
@@ -149,7 +167,11 @@ export function validateFieldLength(
 }
 
 /**
- * Validates that a required field is not empty.
+ * Validates that a required field is present and non-empty.
+ *
+ * @param value - The value to check.
+ * @param fieldName - Human-readable field label used in error messages.
+ * @throws {BadRequestException} When the value is null, undefined, or an empty string.
  */
 export function validateRequired(
   value: unknown,

@@ -2,7 +2,7 @@
 
 **Goal:** Structured NestJS backend learning through hands-on implementation of real-world patterns—users, posts, tags, metadata—with focus on persistence, relationships, validation, and reusable architecture.
 
-**Status:** Week 6 Complete. All core CRUD flows for 4 major entities with many-to-many relationships, validated DTOs, reusable exception/validator patterns, database relationships modeled (TypeORM entities), API documentation with Swagger, and auth module structure in place.
+**Status:** Week 7 Complete. All core CRUD flows for 4 major entities with many-to-many relationships, validated DTOs, full exception handling layer (8 helpers covering 400/401/403/404/408/409/500/503), database relationships modeled (TypeORM entities), API documentation with Swagger, and auth module structure in place.
 
 ## Base Structure
 
@@ -10,7 +10,7 @@
 - `src/modules/posts` - Blog post CRUD with repository persistence, validated DTOs, author ownership, tag resolution, and metadata nesting.
 - `src/modules/tags` - Tag create/list with many-to-many relation to posts via `post_tags` junction table.
 - `src/modules/meta-options` - JSON-backed metadata for posts with one-to-one relation.
-- `src/common/exceptions` - Reusable exception helpers for 404 and unique-constraint conflicts.
+- `src/common/exceptions` - Full exception handling layer: 404, 409, 400, 408, 401, 403, 503, 500 helpers.
 - `src/common/validators` - Reusable tag relation validator for many-to-many integrity.
 - `src/helpers` - Response formatting and JSON parsing helpers.
 - `src/common` - Shared guards, interceptors, filters, pipes.
@@ -26,6 +26,15 @@
 - **DTO Validation:** Every endpoint enforces request shape via class-validator decorators (enums, URLs, arrays, nested objects).
 - **Relationship Integrity:** Service-level tag resolution rejects requests with missing tags (404), validated on create/update/patch.
 - **Unique Constraint Handling:** DB uniqueness violations (e.g., duplicate slugs) mapped to clean 409 Conflict responses.
+- **Full Exception Layer:** 8 reusable helpers cover every HTTP error scenario at the service layer:
+  - `bad-request.helper` — email format, password strength, field length, required fields (400)
+  - `unauthorized.helper` — token presence, user auth state, JWT errors (401)
+  - `forbidden.helper` — role validation, resource ownership, role hierarchy (403)
+  - `not-found.helper` — resource existence assertions (404)
+  - `request-timeout.helper` — DB query and network timeout detection (408)
+  - `unique-constraint.helper` — DB unique constraint mapping (409)
+  - `internal-error.helper` — unexpected errors with server-side NestJS Logger (500)
+  - `service-unavailable.helper` — DB/service connectivity failures (503)
 - **Swagger Documentation:** All endpoints documented with request/response shapes, error codes, and parameter descriptions.
 - **Compodoc 100% Coverage:** All exports have JSDoc (class, method, property, interface).
 
@@ -126,6 +135,8 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 ### Tags
 - `POST /v1/tags` - Create tag
 - `GET /v1/tags` - List all tags
+- `GET /v1/tags/:id` - Get tag with associated posts
+- `DELETE /v1/tags/:id` - Soft-delete tag
 
 ### Meta Options
 - `POST /v1/meta-options` - Create metadata entry
@@ -137,17 +148,19 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 | Repository + Service | Decouples domain logic from DB implementation; easier testing. |
 | @JoinTable for Many-to-Many | Normalized DB structure; supports complex queries and reuse. |
 | Validation at DTO Layer | Enforces contracts early; cleaner service methods. |
-| Reusable Exception Helpers | Consistent error handling; avoids duplication across modules. |
+| Layered Exception Helpers | Each HTTP error type has its own helper; consistent responses across all service methods. |
 | Eager Loading (Tags, Meta) | Reduces N+1 queries in post responses. |
 | Email-Based Author Lookup | Clients reference human identifiers, not internal IDs. |
+| Server-Side Error Logging | Internal errors logged with context via NestJS Logger; generic message returned to client. |
 
-## Next Steps (Post-Week 1)
+## Next Steps (Post-Week 7)
 
-1. Add auth guards and route protection (at least one JWT-protected endpoint).
-2. Write integration tests for post-tags-metadata workflows.
-3. Add pagination, filtering, and sorting to list endpoints.
-4. **Migrate to explicit TypeORM migrations** (infrastructure ready in `src/database/data-source.ts`; switch `synchronize: false` when ready; see "Database & Migrations" section).
-5. Explore Docker setup for containerized local development.
+1. Add auth guards and route protection (at least one JWT-protected endpoint using the new `unauthorized`/`forbidden` helpers).
+2. Write unit tests for exception helper behavior (validate each helper throws correctly).
+3. Write integration tests for post-tags-metadata workflows.
+4. Add pagination, filtering, and sorting to list endpoints.
+5. **Migrate to explicit TypeORM migrations** (infrastructure ready in `src/database/data-source.ts`; switch `synchronize: false` when ready; see "Database & Migrations" section).
+6. Explore Docker setup for containerized local development.
 
 ## Learning Philosophy
 

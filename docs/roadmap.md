@@ -9,7 +9,7 @@ Build a course-aligned backend in small learning increments, with proof of imple
 - Core app bootstrap is in place with versioned routing and validation.
 - Users module has full controller-level CRUD-style routes with DTO validation and TypeORM repository-backed service methods.
 - Posts module has CRUD endpoints (create, get all, get by id, put, patch, delete) with validated DTOs, enums, repository-backed service methods, formatted author details, and relation-aware tag resolution.
-- Tags module now supports create/get flows and is linked to posts through many-to-many mapping with a junction table.
+- Tags module now supports create/get/delete flows and is linked to posts through many-to-many mapping with a junction table.
 - Reusable relation validator and exception helpers are now used for cleaner service logic:
 	- tag relation resolution moved to a common validator
 	- DB unique constraint translation moved to a common exception helper
@@ -21,6 +21,15 @@ Build a course-aligned backend in small learning increments, with proof of imple
 - Swagger is configured and available at /api.
 - Compodoc workflow is set with build/serve/watch scripts and generated output isolated to .compodoc.
 - JSDoc coverage is complete for scoped backend source files.
+- **Full exception handling layer is in place** across all service methods:
+	- `not-found.helper.ts` — 404 resource guards
+	- `unique-constraint.helper.ts` — 409 DB constraint violations
+	- `bad-request.helper.ts` — 400 input validation (email format, password strength, field length)
+	- `request-timeout.helper.ts` — 408 timeouts (DB queries, network ops)
+	- `unauthorized.helper.ts` — 401 auth failures (token missing/invalid/expired)
+	- `forbidden.helper.ts` — 403 permission/role/ownership checks
+	- `service-unavailable.helper.ts` — 503 DB/service connection failures
+	- `internal-error.helper.ts` — 500 unexpected errors with server-side logging
 
 ## Week-by-Week Status
 
@@ -83,7 +92,25 @@ Status: Complete (Learning Baseline)
 - Basic guard structure scaffolded; route protection ready for implementation.
 - JWT/local strategy preparation in place; full production-grade auth guards pending.
 
-## Week 7: Quality + Optional Docker Exploration
+## Week 7: Exception Handling
+
+Status: Complete (2026-05-29)
+
+- Full exception handling layer implemented across all service methods.
+- 8 reusable exception helpers created in `src/common/exceptions/`:
+	- `not-found.helper.ts` — 404 resource existence assertions
+	- `unique-constraint.helper.ts` — 409 DB unique constraint mapping
+	- `bad-request.helper.ts` — 400 input validation (email format, password strength, field length, required fields)
+	- `request-timeout.helper.ts` — 408 timeout detection (ECONNABORTED, ETIMEDOUT, deadlocks)
+	- `unauthorized.helper.ts` — 401 auth failures (token presence, user auth state, JWT errors)
+	- `forbidden.helper.ts` — 403 permission checks (role validation, resource ownership, role hierarchy)
+	- `service-unavailable.helper.ts` — 503 service connectivity (ECONNREFUSED, ENOTFOUND, pool exhausted)
+	- `internal-error.helper.ts` — 500 unexpected errors with server-side logging via NestJS Logger
+- All service layers (users, posts, tags, meta-options, auth) updated with layered try-catch handling.
+- AuthService enhanced with token presence checks and auth-failure exception mapping.
+- UsersService enhanced with duplicate email detection on update/patch operations.
+
+## Week 8: Quality + Optional Docker Exploration
 
 Status: In Progress
 
@@ -94,7 +121,7 @@ Status: In Progress
 
 ## Immediate Next Priorities
 
-1. **Expand test coverage** for service behavior (tag resolution, relationship integrity, error mapping).
+1. **Expand test coverage** for service behavior (tag resolution, relationship integrity, error mapping including new exception helpers).
 2. **Add auth guards** and route protection (at least one protected users/posts endpoint with JWT verification).
 3. **Strengthen DB lifecycle** by replacing `synchronize: true` with proper migration strategy and seeds.
 4. **Integration tests** for `post_tags` write/read behavior, author-post ownership, and metadata nesting.

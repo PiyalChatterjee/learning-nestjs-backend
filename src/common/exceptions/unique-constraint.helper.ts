@@ -6,18 +6,36 @@ import { QueryFailedError } from 'typeorm';
  */
 interface UniqueConstraintOptions {
   /**
-   * User-facing conflict message.
+   * User-facing conflict message returned in the 409 response body.
    */
   message: string;
 
   /**
-   * Optional database constraint name to match exactly.
+   * Optional Postgres constraint name to match.
+   * When provided, the exception is only thrown if this specific constraint was violated.
+   * Useful when a table has multiple unique constraints.
    */
   constraint?: string;
 }
 
 /**
- * Throws ConflictException when a Postgres unique constraint error is detected.
+ * Translates a Postgres unique constraint violation (error code 23505) into a 409 Conflict exception.
+ * Has no effect on any other error type.
+ *
+ * @param error - The caught error to inspect.
+ * @param options - Message and optional constraint name for precise matching.
+ * @throws {ConflictException} When a unique constraint violation matching the options is detected.
+ *
+ * @example
+ * try {
+ *   await this.postRepository.save(post);
+ * } catch (error) {
+ *   throwIfUniqueConstraintViolation(error, {
+ *     message: 'Post with this slug already exists',
+ *     constraint: 'UQ_post_slug',
+ *   });
+ *   throw error;
+ * }
  */
 export function throwIfUniqueConstraintViolation(
   error: unknown,

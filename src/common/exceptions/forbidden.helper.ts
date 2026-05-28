@@ -5,19 +5,25 @@ import { ForbiddenException } from '@nestjs/common';
  */
 interface ForbiddenOptions {
   /**
-   * User-facing error message.
+   * User-facing message returned in the 403 response body.
    */
   message: string;
 
   /**
-   * Optional context (e.g., 'insufficient role', 'resource ownership').
+   * Optional description of the permission check that failed (e.g., 'insufficient role', 'resource ownership').
+   * Appended to the message in parentheses when provided.
    */
   context?: string;
 }
 
 /**
- * Throws ForbiddenException when user lacks required permissions.
- * Handles: insufficient roles, resource ownership violations, permission checks.
+ * Translates a permission-related error into a 403 Forbidden exception.
+ * Detects insufficient role, access denied, and permission-pattern messages.
+ * Has no effect on errors that do not match permission patterns.
+ *
+ * @param error - The caught error to inspect.
+ * @param options - User-facing message and optional permission context.
+ * @throws {ForbiddenException} When a permission failure pattern is detected.
  */
 export function throwIfForbidden(
   error: unknown,
@@ -48,7 +54,12 @@ export function throwIfForbidden(
 }
 
 /**
- * Validates that user has required role and throws ForbiddenException if not.
+ * Validates that the authenticated user holds the required role.
+ *
+ * @param userRole - The role assigned to the current user.
+ * @param requiredRole - The role that must be present to proceed.
+ * @param resourceType - Optional resource label appended to the error message.
+ * @throws {ForbiddenException} When userRole does not exactly match requiredRole.
  */
 export function assertUserHasRole(
   userRole: string | undefined,
@@ -64,7 +75,12 @@ export function assertUserHasRole(
 }
 
 /**
- * Validates resource ownership and throws ForbiddenException if user is not the owner.
+ * Validates that the authenticated user is the owner of the resource.
+ *
+ * @param userId - ID of the authenticated user making the request.
+ * @param resourceOwnerId - ID of the user who owns the resource.
+ * @param resourceType - Optional resource label appended to the error message.
+ * @throws {ForbiddenException} When userId does not match resourceOwnerId.
  */
 export function assertResourceOwnership(
   userId: number,
@@ -78,8 +94,15 @@ export function assertResourceOwnership(
 }
 
 /**
- * Validates that user has minimum required role level.
- * Supports simple role hierarchy: 'admin' > 'moderator' > 'user'
+ * Validates that the authenticated user meets the minimum required role level.
+ * Uses a simple hierarchy: 'admin' (3) > 'moderator' (2) > 'user' (1).
+ *
+ * @param userRole - Role string assigned to the current user.
+ * @param minimumRole - The lowest role level permitted to proceed.
+ * @throws {ForbiddenException} When the user's role level is below the required level.
+ *
+ * @example
+ * assertMinimumRoleLevel(currentUser.role, 'moderator');
  */
 export function assertMinimumRoleLevel(
   userRole: string | undefined,
