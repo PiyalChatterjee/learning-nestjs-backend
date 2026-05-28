@@ -2,7 +2,7 @@
 
 **Goal:** Structured NestJS backend learning through hands-on implementation of real-world patterns—users, posts, tags, metadata—with focus on persistence, relationships, validation, and reusable architecture.
 
-**Status:** Week 7 Complete. All core CRUD flows for 4 major entities with many-to-many relationships, validated DTOs, full exception handling layer (8 helpers covering 400/401/403/404/408/409/500/503), database relationships modeled (TypeORM entities), API documentation with Swagger, and auth module structure in place.
+**Status:** Week 8 In Progress. All core CRUD flows for 4 major entities with many-to-many relationships, validated DTOs, full exception handling layer (8 helpers covering 400/401/403/404/408/409/500/503), database relationships modeled (TypeORM entities), API documentation with Swagger, auth module structure in place, and DB outage resilience enabled.
 
 ## Base Structure
 
@@ -35,6 +35,7 @@
   - `unique-constraint.helper` — DB unique constraint mapping (409)
   - `internal-error.helper` — unexpected errors with server-side NestJS Logger (500)
   - `service-unavailable.helper` — DB/service connectivity failures (503)
+- **Resilient DB Lifecycle:** API process can boot while DB is down, retries connection in background, and returns 503 for DB-dependent endpoints until DB reconnects.
 - **Swagger Documentation:** All endpoints documented with request/response shapes, error codes, and parameter descriptions.
 - **Compodoc 100% Coverage:** All exports have JSDoc (class, method, property, interface).
 
@@ -89,6 +90,38 @@ npm run doc:watch # Watch and rebuild on file changes
 ```
 
 ## Database & Migrations
+
+### Runtime DB Resilience (Current Learning Setup)
+- `manualInitialization: true` in TypeORM config keeps Nest startup independent from immediate DB availability.
+- `DatabaseConnectionBootstrap` retries `DataSource.initialize()` every 5 seconds until successful.
+- During outage, DB-dependent endpoints return `503 Service Unavailable` through `service-unavailable.helper`.
+- After PostgreSQL comes back, the running app reconnects automatically (no app restart required).
+
+### Windows PostgreSQL Service Commands
+
+Run in Administrator PowerShell:
+
+```powershell
+Start-Service -Name postgresql-x64-18
+Stop-Service -Name postgresql-x64-18
+Get-Service -Name postgresql-x64-18
+```
+
+Connection check:
+
+```powershell
+pg_isready -h localhost -p 5432
+```
+
+### Port Conflict Troubleshooting (EADDRINUSE)
+
+If `npm run start:dev` shows `EADDRINUSE: address already in use :::8000`, another process is already listening on port 8000.
+
+```powershell
+Get-NetTCPConnection -LocalPort 8000 -State Listen
+taskkill /PID <pid> /F
+npm run start:dev
+```
 
 ### Current Setup (Week 1)
 - **Mode:** Development with `synchronize: true`
@@ -161,6 +194,7 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 4. Add pagination, filtering, and sorting to list endpoints.
 5. **Migrate to explicit TypeORM migrations** (infrastructure ready in `src/database/data-source.ts`; switch `synchronize: false` when ready; see "Database & Migrations" section).
 6. Explore Docker setup for containerized local development.
+7. Add health endpoints that separate API liveness from DB readiness.
 
 ## Learning Philosophy
 

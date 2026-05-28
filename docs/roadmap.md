@@ -30,6 +30,10 @@ Build a course-aligned backend in small learning increments, with proof of imple
 	- `forbidden.helper.ts` — 403 permission/role/ownership checks
 	- `service-unavailable.helper.ts` — 503 DB/service connection failures
 	- `internal-error.helper.ts` — 500 unexpected errors with server-side logging
+- Database lifecycle is now resilient for local learning scenarios:
+	- app startup no longer hard-fails when PostgreSQL is down
+	- background retry bootstrap initializes DB when service comes back
+	- DB-down request-time failures are mapped to 503 and recover to normal responses after reconnection
 
 ## Week-by-Week Status
 
@@ -112,18 +116,22 @@ Status: Complete (2026-05-29)
 
 ## Week 8: Quality + Optional Docker Exploration
 
-Status: In Progress
+Status: In Progress (DB resiliency milestone completed)
 
 - Unit test scaffolding exists and targeted module tests pass.
 - Test files present for users, posts, tags, meta-options, and auth controllers/services.
 - E2E test structure in place (`test/app.e2e-spec.ts`) ready for integration scenarios.
+- DB resilience and recovery flow implemented and verified:
+	- `manualInitialization: true` in TypeORM config keeps server bootable during DB outage
+	- `DatabaseConnectionBootstrap` retries initialization in background
+	- runtime DB-init/metadata failures are mapped to 503 in service-unavailable helper
 - Docker exploration not yet started; will be optional learning extension after test coverage solidifies.
 
 ## Immediate Next Priorities
 
 1. **Expand test coverage** for service behavior (tag resolution, relationship integrity, error mapping including new exception helpers).
 2. **Add auth guards** and route protection (at least one protected users/posts endpoint with JWT verification).
-3. **Strengthen DB lifecycle** by replacing `synchronize: true` with proper migration strategy and seeds.
+3. **Strengthen DB lifecycle further** by replacing `synchronize: true` with proper migration strategy and seeds.
 4. **Integration tests** for `post_tags` write/read behavior, author-post ownership, and metadata nesting.
 5. **Advanced query patterns**: author-centric queries, inverse mappings (users -> posts), pagination enhancements.
 6. **Optional:** Docker exploration for containerized local development and deployment simulation.
@@ -147,3 +155,4 @@ Status: In Progress
 | 2026-05-19 | Posts full CRUD completion | Added remaining posts operations: get by id, put, delete; added UpdatePostDto and aligned PatchPostDto; wired controller + service repository flow | src/modules/posts/posts.controller.ts, src/modules/posts/provider/posts.service.ts, src/modules/posts/dtos/update-post.dto.ts, src/modules/posts/dtos/patch-post.dto.ts | 4 | Should update/patch support author reassignment by email in a separate dedicated endpoint? |
 | 2026-05-23 | Tags relationship integration + validation cleanup | Linked posts-tags via many-to-many (`post_tags`), added common tag relation validator, fixed tags DTO per-item validation, and aligned HTTP payloads with URL tag slugs | src/modules/posts/post.entity.ts, src/common/validators/tag-relation.validator.ts, src/modules/posts/dtos/create-post.dto.ts, src/modules/posts/provider/posts.service.ts | 5 | Should API accept tag IDs internally while keeping slugs as public identifiers? |
 | 2026-05-23 | Reusable DB exception handling pattern | Added common helper to translate unique DB errors into ConflictException and reused it across create/update/patch post writes | src/common/exceptions/unique-constraint.helper.ts, src/modules/posts/provider/posts.service.ts | 5 | Generalize exception mapping into a global DB exception filter later? |
+| 2026-05-29 | DB outage resilience + recovery | Kept API process bootable during DB outage, added background DB reconnection bootstrap, and mapped uninitialized/metadata DB errors to 503 for request-time handling | src/app.module.ts, src/database/database-connection.bootstrap.ts, src/common/exceptions/service-unavailable.helper.ts, docs/learning-issues.md | 5 | Add health endpoint that reports DB connectivity separately from API process health? |
