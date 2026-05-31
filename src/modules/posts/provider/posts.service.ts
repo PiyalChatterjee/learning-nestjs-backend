@@ -113,7 +113,7 @@ export class PostsService {
         createPostDto.authorEmail,
       );
 
-      // extract authorEmail and metaOption from DTO
+      // extract authorEmail, tags, and metaOption from DTO
       const { authorEmail, metaOption, tags = [], ...postData } = createPostDto;
       const postTags = await this.tagRelationValidator.resolveTagsOrThrow(tags);
 
