@@ -16,6 +16,7 @@ import { PatchUserDto } from './dtos/patch-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { UsersService } from './provider/users.service';
 import { ApiQuery, ApiTags, ApiBody, ApiParam, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { CreateManyUsersDto } from './dtos/create-many-users.dto';
 
 /**
  * Exposes user management endpoints.
@@ -133,6 +134,16 @@ export class UsersController {
   @ApiBody({ type: CreateUserDto, description: 'Data transfer object for creating a new user' })
   public createUser(@Body() dto: CreateUserDto) {
     return this.usersService.createUser(dto);
+  }
+
+  @Post('create-many')
+  @ApiOperation({ summary: 'Create multiple users in a batch operation' })
+  @ApiResponse({ status: 201, description: 'Successfully created multiple users' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 409, description: 'One or more emails already in use' })
+  @ApiBody({ type: CreateManyUsersDto, description: 'Array of data transfer objects for creating multiple users' })
+  public createManyUsers(@Body() createManyUsersDto: CreateManyUsersDto) {
+    return this.usersService.createManyUsers(createManyUsersDto);
   }
 
   /**

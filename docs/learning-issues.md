@@ -27,6 +27,13 @@
 ✅ **MetaOptionsService** - 1 method wrapped (create)
 ✅ **AuthService** - Enhanced login & isAuthenticated with auth exceptions
 
+### Transactions and Bulk Operations (Decision Note)
+- Transactions are not required for every CRUD operation.
+- Use transactions when multiple writes must succeed or fail together (all-or-nothing), such as bulk create/update flows.
+- Single-record operations that perform one save/remove typically do not need explicit manual transactions.
+- Bulk endpoints are realistic in production (admin/import/moderation workflows), but can be added incrementally after core single-item endpoints are stable.
+- Keep database unique constraints in place; transactions help atomicity, while constraints protect against race-condition duplicates.
+
 ## Issue Entry Rule (Use For Every New Issue)
 
 Capture the following fields every time:

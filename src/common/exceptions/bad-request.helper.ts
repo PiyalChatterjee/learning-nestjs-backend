@@ -4,8 +4,11 @@ import { BadRequestException } from '@nestjs/common';
  * Represents a single validation error produced by class-validator.
  */
 interface ValidationError {
+  /** The DTO property name that failed validation. */
   property: string;
+  /** Map of constraint names to their violation messages. */
   constraints?: Record<string, string>;
+  /** Nested validation errors for complex/nested objects. */
   children?: ValidationError[];
 }
 

@@ -28,6 +28,7 @@ interface InternalServerErrorOptions {
   originalError?: unknown;
 }
 
+/** Shared NestJS logger instance used by all error-handler helpers in this module. */
 const logger = new Logger('ErrorHandler');
 
 /**

@@ -4,6 +4,7 @@ import { AuthService } from '../../auth/provider/auth.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../user.entity';
 import profileConfig from '../config/profile.config';
+import { UserCreateManyProvider } from './user-create-many.provider';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -23,7 +24,11 @@ describe('UsersService', () => {
         {
           provide: profileConfig.KEY,
           useValue: {},
-        },  
+        },
+        {
+          provide: UserCreateManyProvider,
+          useValue: {},
+        },
       ],
     }).compile();
 

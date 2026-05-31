@@ -29,6 +29,7 @@ import { DatabaseConnectionBootstrap } from './database/database-connection.boot
  */
 
 const ENV = process.env.NODE_ENV;
+/** Path to the environment file loaded by ConfigModule, derived from NODE_ENV (e.g. `.env.development.local` or `.env`). */
 const ENV_FILE_PATH = ENV ? `.env.${ENV}.local` : '.env';
 @Module({
   imports: [

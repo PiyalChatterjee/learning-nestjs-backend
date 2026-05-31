@@ -1,11 +1,19 @@
-import { ConflictException, forwardRef, Inject, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import { PatchUserDto } from '../dtos/patch-user.dto';
 import { AuthService } from '../../auth/provider/auth.service';
 import { assertResourceExists } from '../../../common/exceptions/not-found.helper';
 import { throwIfRequestTimeout } from '../../../common/exceptions/request-timeout.helper';
-import { validateEmail, validatePasswordStrength } from '../../../common/exceptions/bad-request.helper';
+import {
+  validateEmail,
+  validatePasswordStrength,
+} from '../../../common/exceptions/bad-request.helper';
 import { throwIfServiceUnavailable } from '../../../common/exceptions/service-unavailable.helper';
 import { throwIfUnexpectedError } from '../../../common/exceptions/internal-error.helper';
 import { Repository } from 'typeorm';
@@ -13,6 +21,8 @@ import { User } from '../user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import profileConfig from '../config/profile.config';
 import { ConfigType } from '@nestjs/config';
+import { UserCreateManyProvider } from './user-create-many.provider';
+import { CreateManyUsersDto } from '../dtos/create-many-users.dto';
 
 /**
  * Internal representation of persisted user data.
@@ -45,6 +55,7 @@ export class UsersService {
    * Inject the AuthService into the UsersService using dependency injection. This allows us to use the methods defined in the AuthService to handle authentication-related logic in our user service, such as validating user credentials or checking if a user is authenticated before allowing access to certain user-related operations.
    * Inject User Repository to manage user data persistence and retrieval from the database. This allows us to perform CRUD operations on user entities using TypeORM's repository pattern, abstracting away the underlying database interactions and providing a clean interface for working with user data in our service.
    * Inject profile configuration to access any profile-related settings defined in the application's configuration files. This allows us to utilize configuration values that may be necessary for user-related operations, such as API keys, feature flags, or other settings that can be defined in the profile configuration.
+   * Inject create many provider to handle batch user creation logic in a separate provider class, allowing us to keep our service methods focused and maintain separation of concerns. This also allows us to reuse the batch creation logic in different parts of the application if needed, while keeping it encapsulated within its own provider.
    */
   constructor(
     @Inject(forwardRef(() => AuthService))
@@ -54,7 +65,8 @@ export class UsersService {
 
     @Inject(profileConfig.KEY)
     private readonly profileConfiguration: ConfigType<typeof profileConfig>,
-    
+
+    private readonly userCreateManyProvider: UserCreateManyProvider,
   ) {}
   // Service methods will go here, utilizing authService for authentication checks and userRepository for database operations.
 
@@ -77,7 +89,7 @@ export class UsersService {
         throw new ConflictException('Email already in use');
       }
 
-      // configure the user entity 
+      // configure the user entity
       const { firstName, lastName, email, password } = createUserDto;
       const user = this.userRepository.create({
         firstName,
@@ -106,6 +118,13 @@ export class UsersService {
       });
       throw error;
     }
+  }
+
+  /**
+   * Create many user records
+   */
+  public async createManyUsers(createManyUsersDto: CreateManyUsersDto) {
+    return await this.userCreateManyProvider.createManyUsers(createManyUsersDto);
   }
 
   /**
