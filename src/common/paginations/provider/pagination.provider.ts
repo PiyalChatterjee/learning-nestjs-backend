@@ -5,18 +5,44 @@ import { FindOptionsOrder, ObjectLiteral, Repository } from 'typeorm';
 import { Request } from 'express';
 import { REQUEST } from '@nestjs/core';
 
+/**
+ * Optional provider-level pagination behaviors for repository-backed queries.
+ */
 type PaginationOptions<T extends ObjectLiteral> = {
+  /**
+   * Sort order applied to the paginated repository query.
+   */
   order?: FindOptionsOrder<T>;
 };
 
+/**
+ * Hard maximum page size accepted by the pagination provider.
+ */
 const MAX_LIMIT = 100;
 
 @Injectable()
+/**
+ * Provides reusable pagination behavior for list queries.
+ */
 export class PaginationProvider {
+  /**
+   * Creates an instance of PaginationProvider.
+   *
+   * @param request Active HTTP request used to generate absolute pagination links.
+   */
   constructor(
     @Inject(REQUEST)
     private readonly request: Request,
   ) {}
+
+  /**
+   * Runs a repository query with pagination and returns a normalized paginated response.
+   *
+   * @param paginateQuery Incoming pagination query values.
+   * @param repository Repository used to fetch and count records.
+   * @param options Optional query behaviors such as deterministic ordering.
+   * @returns Paginated response containing metadata, links, and result data.
+   */
   public async paginateQuery<T extends ObjectLiteral>(
     paginateQuery: PaginationQueryDto,
     repository: Repository<T>,
@@ -65,6 +91,12 @@ export class PaginationProvider {
     return finalResponse;
   }
 
+  /**
+   * Builds base query parameters for pagination links while preserving non-pagination filters.
+   *
+   * @param limit Effective page size used in the current response.
+   * @returns URLSearchParams containing preserved query values and normalized limit.
+   */
   private buildBaseParams(limit: number): URLSearchParams {
     const params = new URLSearchParams();
 
@@ -83,6 +115,14 @@ export class PaginationProvider {
     return params;
   }
 
+  /**
+   * Builds an absolute page link from a base URL and query parameters.
+   *
+   * @param baseURL Absolute route URL without query string.
+   * @param baseParams Preserved query parameters.
+   * @param page Target page number.
+   * @returns Full URL including page and other query parameters.
+   */
   private buildPageLink(
     baseURL: string,
     baseParams: URLSearchParams,
@@ -93,6 +133,12 @@ export class PaginationProvider {
     return `${baseURL}?${params.toString()}`;
   }
 
+  /**
+   * Normalizes request query values into a flat string array for URL encoding.
+   *
+   * @param value Raw query value from the request object.
+   * @returns Flat string array compatible with URLSearchParams append behavior.
+   */
   private normalizeQueryValue(value: unknown): string[] {
     if (value === undefined || value === null) {
       return [];

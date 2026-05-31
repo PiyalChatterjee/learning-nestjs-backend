@@ -116,3 +116,6 @@ dist
 
 # GitHub
 .github
+
+# PIP workspace files
+pip.code-workspace
