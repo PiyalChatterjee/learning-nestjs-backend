@@ -17,6 +17,8 @@ import { User } from '../../users/user.entity';
 import { Repository } from 'typeorm';
 import { formatPostWithAuthor } from '../../../helpers/format-post-with-author.helper';
 import { MetaOption } from '../../meta-options/meta-option.entity';
+import { GetPostsDto } from '../dtos/get-posts.dto';
+import { PaginationProvider } from '../../../common/paginations/provider/pagination.provider';
 
 /**
  * Manages post data operations.
@@ -27,6 +29,7 @@ export class PostsService {
    * Inject Post Repository to manage post data persistence and retrieval from the database.
    * Inject User Repository to look up authors by email when creating posts.
    * Inject PostCreateManyProvider for bulk post creation with transaction support.
+   * Inject PaginationProvider for paginating post queries.
    */
   constructor(
     @InjectRepository(Post)
@@ -37,18 +40,31 @@ export class PostsService {
     private readonly metaOptionRepository: Repository<MetaOption>,
     private readonly tagRelationValidator: TagRelationValidator,
     private readonly postCreateManyProvider: PostCreateManyProvider,
+    private readonly paginationProvider: PaginationProvider,
   ) {}
 
   /**
    * Returns all posts stored in the database.
    */
-  public async getAllPosts() {
+  public async getAllPosts(getPostsDto: GetPostsDto) {
     try {
-      // fetch all posts from the database
-      const posts = await this.postRepository.find();
+      // fetch all posts from the database using pagination provider
+      const posts = await this.paginationProvider.paginateQuery(
+        {
+          page: getPostsDto.page || 1,
+          limit: getPostsDto.limit || 10,
+        },
+        this.postRepository,
+        {
+          order: { id: 'DESC' },
+        },
+      );
 
-      // format posts with author details
-      return posts.map((post) => formatPostWithAuthor(post));
+      // return paginated response with each post formatted with author details
+      return {
+        ...posts,
+        data: posts.data.map((post) => formatPostWithAuthor(post)),
+      };
     } catch (error) {
       throwIfServiceUnavailable(error, {
         message: 'Cannot fetch posts at this moment',
@@ -125,7 +141,8 @@ export class PostsService {
       const post = this.postRepository.create({
         ...postData,
         tags: postTags,
-        metaValue: (metaOption as unknown as typeof post.metaValue) ?? undefined,
+        metaValue:
+          (metaOption as unknown as typeof post.metaValue) ?? undefined,
       });
       post.author = author;
 
@@ -163,9 +180,8 @@ export class PostsService {
    * See PostCreateManyProvider for detailed bulk operation semantics.
    */
   public async createManyPosts(createManyPostsDto: CreateManyPostsDto) {
-    const posts = await this.postCreateManyProvider.createManyPosts(
-      createManyPostsDto,
-    );
+    const posts =
+      await this.postCreateManyProvider.createManyPosts(createManyPostsDto);
     return posts.map((post) => formatPostWithAuthor(post));
   }
 
@@ -258,7 +274,9 @@ export class PostsService {
       await this.postRepository.save(post);
 
       // reload post to get eager relations after save
-      const updatedPost = await this.postRepository.findOne({ where: { id: post.id } });
+      const updatedPost = await this.postRepository.findOne({
+        where: { id: post.id },
+      });
       return formatPostWithAuthor(updatedPost);
     } catch (error) {
       if (patchPostDto.slug) {

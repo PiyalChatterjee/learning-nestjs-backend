@@ -6,6 +6,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
 } from '@nestjs/common';
 import { TagsService } from './providers/tags.service';
 import { PostTagDto } from './dtos/post-tag.dto';
@@ -13,6 +14,7 @@ import { CreateManyTagsDto } from './dtos/create-many-tags.dto';
 import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { formatTag } from '../../helpers/format-tag.helper';
 import { formatPostSummary } from '../../helpers/format-post-summary.helper';
+import { PaginationQueryDto } from '../../common/paginations/dtos/pagination-query.dto';
 
 /**
  * Handles HTTP operations for tags.
@@ -60,9 +62,12 @@ export class TagsController {
    * Returns all tags in formatted output shape.
    */
   @Get()
-  public async getAllTags() {
-    const tags = await this.tagsService.getAllTags();
-    return tags.map(formatTag);
+  public async getAllTags(@Query() paginationQuery: PaginationQueryDto) {
+    const tags = await this.tagsService.getAllTags(paginationQuery);
+    return {
+      ...tags,
+      data: tags.data.map(formatTag),
+    };
   }
 
   /**

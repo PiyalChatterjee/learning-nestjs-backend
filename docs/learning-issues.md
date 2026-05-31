@@ -34,6 +34,23 @@
 - Bulk endpoints are realistic in production (admin/import/moderation workflows), but can be added incrementally after core single-item endpoints are stable.
 - Keep database unique constraints in place; transactions help atomicity, while constraints protect against race-condition duplicates.
 
+### Pagination Architecture Review (Discussion Summary)
+- Identified high-priority production gaps in the first pagination rollout:
+  - no explicit stable ordering guarantee
+  - no max page size guard
+  - empty dataset pagination edge case
+  - pagination links not preserving non-pagination query params
+  - missing behavior-focused tests
+- Implemented immediately:
+  - max `limit` cap
+  - deterministic default ordering (`id DESC`) + explicit order in list services
+  - empty-result-safe metadata (`totalPages` minimum 1)
+  - query-preserving pagination links
+  - provider behavior tests for cap, ordering, links, and empty result
+- Deferred architectural decisions:
+  - cursor/keyset pagination for high-volume endpoints (offset pagination remains acceptable at current scale)
+  - reverse-proxy-aware absolute link strategy if deployed behind load balancer/CDN
+
 ## Issue Entry Rule (Use For Every New Issue)
 
 Capture the following fields every time:
@@ -64,6 +81,44 @@ Capture the following fields every time:
 ### Lesson/Topic Context
 -
 ```
+
+---
+
+## 2026-06-01 - Pagination Hardening Gaps in Production Readiness
+
+### Symptom
+- Pagination worked for basic list requests but had architecture gaps for production use:
+  - no max limit cap
+  - no deterministic default ordering
+  - links dropped non-pagination query params
+  - empty datasets could produce `totalPages = 0`
+  - pagination provider test file only checked provider existence
+
+### Root Cause
+- Initial pagination implementation focused on first working behavior and did not yet include defensive constraints, link continuity rules, and edge-case tests.
+
+### Change Made
+- Updated [src/common/paginations/dtos/pagination-query.dto.ts](src/common/paginations/dtos/pagination-query.dto.ts):
+  - Added `@Max(100)` on `limit`.
+- Updated [src/common/paginations/provider/pagination.provider.ts](src/common/paginations/provider/pagination.provider.ts):
+  - Added optional pagination options with deterministic ordering support.
+  - Added default fallback order (`id DESC`) when no order is provided.
+  - Enforced runtime limit cap with `MAX_LIMIT`.
+  - Added empty-result-safe page math (`totalPages` minimum 1).
+  - Preserved non-pagination query params in generated links.
+- Updated list service calls to pass explicit deterministic order:
+  - [src/modules/posts/provider/posts.service.ts](src/modules/posts/provider/posts.service.ts)
+  - [src/modules/users/provider/users.service.ts](src/modules/users/provider/users.service.ts)
+  - [src/modules/tags/providers/tags.service.ts](src/modules/tags/providers/tags.service.ts)
+- Replaced outdated provider spec in [src/common/paginations/provider/pagination.provider.spec.ts](src/common/paginations/provider/pagination.provider.spec.ts) with behavior tests for cap, ordering, empty-data metadata, and query-preserving links.
+
+### Verification Result
+- `PaginationProvider` spec run: 5 passed.
+- Focused regression tests run: 7 passed (pagination provider + users service spec + tags service spec).
+- TypeScript diagnostics checked on modified pagination files: no errors.
+
+### Lesson/Topic Context
+- A working pagination MVP should be hardened with limits, stable ordering, link continuity, and edge-case tests before treating it as reusable infrastructure.
 
 ---
 

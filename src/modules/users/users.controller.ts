@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  DefaultValuePipe,
   Delete,
   Get,
   Param,
@@ -17,6 +16,7 @@ import { UpdateUserDto } from './dtos/update-user.dto';
 import { UsersService } from './provider/users.service';
 import { ApiQuery, ApiTags, ApiBody, ApiParam, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CreateManyUsersDto } from './dtos/create-many-users.dto';
+import { PaginationQueryDto } from '../../common/paginations/dtos/pagination-query.dto';
 
 /**
  * Exposes user management endpoints.
@@ -92,16 +92,8 @@ export class UsersController {
     type: Number,
     description: 'Page number to return',
   })
-  public getAllUsers(
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-  ) {
-    const parsedLimit = Number(limit);
-    const parsedPage = Number(page);
-    console.log(
-      `Fetching users with limit ${parsedLimit} and page ${parsedPage}`,
-    );
-    return this.usersService.getAllUsers(parsedLimit, parsedPage);
+  public getAllUsers(@Query() paginationQuery: PaginationQueryDto) {
+    return this.usersService.getAllUsers(paginationQuery);
   }
 
   /**

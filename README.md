@@ -2,7 +2,7 @@
 
 **Goal:** Structured NestJS backend learning through hands-on implementation of real-world patterns—users, posts, tags, metadata—with focus on persistence, relationships, validation, and reusable architecture.
 
-**Status:** Week 8 Complete. All core CRUD flows for 4 major entities with many-to-many relationships, validated DTOs, full exception handling layer (8 helpers + bulk-operation helper covering 400/401/403/404/408/409/500/503), database relationships modeled (TypeORM entities), API documentation with Swagger, auth module structure in place, DB outage resilience enabled, and **bulk operations with atomic transactions** implemented for high-priority modules (users, posts, tags).
+**Status:** Week 9 in progress. All core CRUD flows for 4 major entities with many-to-many relationships, validated DTOs, full exception handling layer (8 helpers + bulk-operation helper covering 400/401/403/404/408/409/500/503), database relationships modeled (TypeORM entities), API documentation with Swagger, auth module structure in place, DB outage resilience enabled, **bulk operations with atomic transactions** implemented for high-priority modules (users, posts, tags), and **hardened shared pagination applied to all list GET endpoints**.
 
 ## Base Structure
 
@@ -42,6 +42,12 @@
   - `POST /v1/tags/bulk` — Atomic tag creation (max 100 per batch); validates batch size, detects duplicate slugs
   - All bulk endpoints: rollback entire batch on validation error, DB constraint violation, or missing relationship; response documents affected count and error details
 - **Resilient DB Lifecycle:** API process can boot while DB is down, retries connection in background, and returns 503 for DB-dependent endpoints until DB reconnects.
+- **Shared Pagination (Hardened):** List endpoints now use common pagination contracts and response shape:
+  - `GET /v1/users?page=1&limit=10`
+  - `GET /v1/posts?page=1&limit=10`
+  - `GET /v1/tags?page=1&limit=10`
+  - Shared implementation via `PaginationQueryDto`, `PaginationProvider`, and `IPaginated<T>` response metadata/links.
+  - Hardening rules implemented: max `limit` cap (`100`), deterministic default ordering (`id DESC`), query-preserving pagination links, and empty-result-safe metadata.
 - **Swagger Documentation:** All endpoints documented with request/response shapes, error codes, and parameter descriptions.
 - **Compodoc 100% Coverage:** All exports have JSDoc (class, method, property, interface).
 
@@ -158,7 +164,7 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 ### Users
 - `POST /v1/users` - Create user
 - `POST /v1/users/bulk` - Bulk create users (atomic transaction, max 100 per batch)
-- `GET /v1/users` - List all users
+- `GET /v1/users?page=1&limit=10` - List users (paginated)
 - `GET /v1/users/:id` - Get user by ID
 - `PUT /v1/users/:id` - Replace user
 - `PATCH /v1/users/:id` - Partial update
@@ -167,7 +173,7 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 ### Posts
 - `POST /v1/posts` - Create post with tags, metadata, author email
 - `POST /v1/posts/bulk` - Bulk create posts (atomic transaction, max 50 per batch; handles tags & authors atomically)
-- `GET /v1/posts` - List all posts with author & tag details
+- `GET /v1/posts?page=1&limit=10` - List posts with author & tag details (paginated)
 - `GET /v1/posts/:id` - Get post by ID
 - `PUT /v1/posts/:id` - Full update (replaces tags and metadata)
 - `PATCH /v1/posts/:id` - Partial update (selective tag/metadata updates)
@@ -176,7 +182,7 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 ### Tags
 - `POST /v1/tags` - Create tag
 - `POST /v1/tags/bulk` - Bulk create tags (atomic transaction, max 100 per batch)
-- `GET /v1/tags` - List all tags
+- `GET /v1/tags?page=1&limit=10` - List tags (paginated)
 - `GET /v1/tags/:id` - Get tag with associated posts
 - `DELETE /v1/tags/:id` - Soft-delete tag
 
@@ -202,7 +208,7 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 3. Write unit tests for new bulk provider patterns and transaction semantics.
 4. Write integration tests for post-tags-metadata workflows with bulk operations.
 5. Extend bulk operations pattern to meta-options module (optional).
-6. Add pagination, filtering, and sorting to list endpoints.
+6. Add filtering and sorting to list endpoints (pagination already hardened and reusable).
 7. **Migrate to explicit TypeORM migrations** (infrastructure ready in `src/database/data-source.ts`; switch `synchronize: false` when ready; see "Database & Migrations" section).
 8. Explore Docker setup for containerized local development.
 9. Add health endpoints that separate API liveness from DB readiness.

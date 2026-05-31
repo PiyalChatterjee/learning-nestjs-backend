@@ -44,6 +44,12 @@ Build a course-aligned backend in small learning increments, with proof of imple
 	- All three endpoints wired and documented in HTTP files
 	- Pattern is reusable for future bulk operations (meta-options, etc.)
 	- Successful manual tests confirm atomic transaction behavior working correctly
+- **Pagination implemented across all list GET endpoints** using shared abstractions:
+	- `GET /users`, `GET /posts`, and `GET /tags` now accept `page` and `limit` query params
+	- `PaginationQueryDto` standardizes query validation/defaults
+	- `PaginationProvider` and `IPaginated<T>` standardize list response metadata and navigation links
+	- Hardened behavior now includes max limit cap, deterministic default ordering, query-preserving links, and empty-result-safe pagination metadata
+	- Architecture discussion notes are captured in `docs/learning-issues.md` under "Pagination Architecture Review (Discussion Summary)"
 
 ## Week-by-Week Status
 
@@ -143,13 +149,14 @@ Status: Complete (2026-06-01)
 - All tests pass (12 test suites, 12 passed); providers mocked in service tests
 - Pattern is documented and ready for reuse in meta-options or future modules
 
-## Week 9: Quality + Optional Docker Exploration
+## Week 9: Quality + Querying + Optional Docker Exploration
 
 Status: In Progress
 
 - E2E test coverage for bulk create success and partial failure handling (transaction rollback scenarios).
 - Unit test expansion for new bulk operation patterns and transaction rollback scenarios.
 - Auth guards and route protection (at least one JWT-protected endpoint).
+- Filtering and sorting support on list endpoints (pagination complete).
 - Optional: Docker exploration for containerized local development.
 - Optional: Extend bulk operations pattern to meta-options module.
 - Auth guards and route protection (JWT verification on protected endpoints).
@@ -161,7 +168,7 @@ Status: In Progress
 3. **Unit test expansion** for bulk providers: test transaction rollback scenarios, batch validation edge cases.
 4. **Strengthen DB lifecycle further** by replacing `synchronize: true` with proper migration strategy and seeds.
 5. **Integration tests** for `post_tags` write/read behavior, author-post ownership, and metadata nesting in bulk scenarios.
-6. **Advanced query patterns**: author-centric queries, inverse mappings (users -> posts), pagination enhancements.
+6. **Advanced query patterns**: author-centric queries, inverse mappings (users -> posts), filtering and sorting enhancements.
 7. **Optional:** Extend bulk operations to meta-options module.
 8. **Optional:** Docker exploration for containerized local development and deployment simulation.
 
@@ -187,3 +194,5 @@ Status: In Progress
 | 2026-05-29 | DB outage resilience + recovery | Kept API process bootable during DB outage, added background DB reconnection bootstrap, and mapped uninitialized/metadata DB errors to 503 for request-time handling | src/app.module.ts, src/database/database-connection.bootstrap.ts, src/common/exceptions/service-unavailable.helper.ts, docs/learning-issues.md | 5 | Add health endpoint that reports DB connectivity separately from API process health? |
 | 2026-06-01 | Bulk operations + transactions | Created UserCreateManyProvider with atomic QueryRunner transactions; batch validation (size/duplicates); bulk-operation-error.helper for cascading error handling; pattern reusable for other modules | src/modules/users/provider/user-create-many.provider.ts, src/modules/users/dtos/create-many-users.dto.ts, src/common/exceptions/bulk-operation-error.helper.ts, docs/roadmap.md | 5 | Wire bulk endpoint in UsersController with Swagger decorators? |
 | 2026-06-01 | Bulk operations expansion (posts & tags) | Extended bulk operations pattern to posts (with tag resolution) and tags modules; all high-priority modules now have atomic bulk create endpoints with full validation and transaction support | src/modules/posts/provider/post-create-many.provider.ts, src/modules/posts/dtos/create-many-posts.dto.ts, src/modules/posts/posts.controller.ts, src/modules/tags/providers/tag-create-many.provider.ts, src/modules/tags/dtos/create-many-tags.dto.ts, src/modules/tags/tags.controller.ts, docs/roadmap.md | 5 | E2E tests for bulk endpoints? Meta-options bulk operations? |
+| 2026-06-01 | Shared pagination rollout | Applied shared pagination to all list GET endpoints (`users`, `posts`, `tags`) using PaginationQueryDto and PaginationProvider with unified paginated response metadata/links | src/common/paginations/dtos/pagination-query.dto.ts, src/common/paginations/provider/pagination.provider.ts, src/modules/users/users.controller.ts, src/modules/users/provider/users.service.ts, src/modules/tags/tags.controller.ts, src/modules/tags/providers/tags.service.ts | 5 | Should nested collections (for example posts inside GET /tags/:id) also be paginated? |
+| 2026-06-01 | Pagination hardening | Strengthened pagination infrastructure with max limit enforcement, deterministic ordering defaults, query-preserving link generation, empty-result-safe pagination metadata, and dedicated provider behavior tests | src/common/paginations/dtos/pagination-query.dto.ts, src/common/paginations/provider/pagination.provider.ts, src/common/paginations/provider/pagination.provider.spec.ts, src/modules/posts/provider/posts.service.ts, src/modules/users/provider/users.service.ts, src/modules/tags/providers/tags.service.ts | 5 | Should high-volume endpoints move from offset pagination to cursor pagination in a later module? |

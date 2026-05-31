@@ -9,6 +9,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TagsModule } from './modules/tags/tags.module';
 import { MetaOptionsModule } from './modules/meta-options/meta-options.module';
+import { PaginationModule } from './common/paginations/pagination.module';
 // Database configuration
 import { AppDataSource } from './database/data-source';
 import appConfig from './config/app.config';
@@ -45,6 +46,7 @@ const ENV_FILE_PATH = ENV ? `.env.${ENV}.local` : '.env';
     AuthModule,
     TagsModule,
     MetaOptionsModule,
+    PaginationModule,
     // Asynchronously configures TypeORM using environment variables.
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],

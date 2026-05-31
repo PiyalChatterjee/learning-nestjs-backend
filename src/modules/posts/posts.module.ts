@@ -10,13 +10,23 @@ import { User } from '../users/user.entity';
 import { Tag } from '../tags/tag.entity';
 import { MetaOption } from '../meta-options/meta-option.entity';
 import { TagRelationValidator } from '../../common/validators/tag-relation.validator';
+import { PaginationModule } from '../../common/paginations/pagination.module';
 
 /**
  * Posts feature module that exposes post endpoints and post service behavior.
  */
 @Module({
   controllers: [PostsController],
-  providers: [PostsService, PostCreateManyProvider, AuthService, TagRelationValidator],
-  imports: [UsersModule, TypeOrmModule.forFeature([Post, User, Tag, MetaOption])],
+  providers: [
+    PostsService,
+    PostCreateManyProvider,
+    AuthService,
+    TagRelationValidator,
+  ],
+  imports: [
+    UsersModule,
+    PaginationModule,
+    TypeOrmModule.forFeature([Post, User, Tag, MetaOption]),
+  ],
 })
 export class PostsModule {}

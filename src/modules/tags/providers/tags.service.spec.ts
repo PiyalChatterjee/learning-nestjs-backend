@@ -4,6 +4,7 @@ import { TagCreateManyProvider } from './tag-create-many.provider';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Tag } from '../tag.entity';
 import { Post } from '../../posts/post.entity';
+import { PaginationProvider } from '../../../common/paginations/provider/pagination.provider';
 
 describe('TagsService', () => {
   let service: TagsService;
@@ -25,6 +26,10 @@ describe('TagsService', () => {
           useValue: {
             createManyTags: jest.fn(),
           },
+        },
+        {
+          provide: PaginationProvider,
+          useValue: {},
         },
       ],
     }).compile();

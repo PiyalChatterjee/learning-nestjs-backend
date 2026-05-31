@@ -1,5 +1,5 @@
 ### Fetch all users
-GET http://localhost:8000/v1/users
+GET http://localhost:8000/v1/users?limit=5&page=1
 
 
 ### Fetch a user by ID

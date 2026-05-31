@@ -7,6 +7,7 @@ import { User } from './user.entity';
 import profileConfig from './config/profile.config';
 import { ConfigModule } from '@nestjs/config';
 import { UserCreateManyProvider } from './provider/user-create-many.provider';
+import { PaginationModule } from '../../common/paginations/pagination.module';
 
 /**
  * Users feature module that provides user API endpoints and user service logic.
@@ -18,6 +19,7 @@ import { UserCreateManyProvider } from './provider/user-create-many.provider';
     forwardRef(() => AuthModule),
     TypeOrmModule.forFeature([User]),
     ConfigModule.forFeature(profileConfig),
+    PaginationModule,
   ],
   exports: [UsersService],
 })

@@ -10,6 +10,8 @@ import { assertResourceExists } from '../../../common/exceptions/not-found.helpe
 import { throwIfRequestTimeout } from '../../../common/exceptions/request-timeout.helper';
 import { throwIfServiceUnavailable } from '../../../common/exceptions/service-unavailable.helper';
 import { throwIfUnexpectedError } from '../../../common/exceptions/internal-error.helper';
+import { PaginationQueryDto } from '../../../common/paginations/dtos/pagination-query.dto';
+import { PaginationProvider } from '../../../common/paginations/provider/pagination.provider';
 
 /**
  * Handles persistence operations for tags.
@@ -17,19 +19,25 @@ import { throwIfUnexpectedError } from '../../../common/exceptions/internal-erro
 @Injectable()
 export class TagsService {
     /**
-     * Initializes tags persistence dependencies.
+     * Constructs a new instance of the TagsService.
+     * @param tagRepository Repository for managing Tag entities.
+     * @param postRepository Repository for managing Post entities.
+     * @param tagCreateManyProvider Provider for handling bulk tag creation.
+     * @param paginationProvider Provider for handling pagination logic.        
      */
     constructor(
         /**
          * Inject Tag repository here if you want to persist tags in the database
          * For this example, we are just returning a mock object without database interaction.
          * You can use TypeORM or any other ORM to handle database operations for tags.
+         * Inject pagination provider to handle pagination logic for fetching tags.
          */
         @InjectRepository(Tag)
         private readonly tagRepository: Repository<Tag>,
         @InjectRepository(Post)
         private readonly postRepository: Repository<Post>,
         private readonly tagCreateManyProvider: TagCreateManyProvider,
+        private readonly paginationProvider: PaginationProvider,
     ) {}
 
     /**
@@ -76,12 +84,19 @@ export class TagsService {
     /**
      * Returns all tags from storage.
      */
-    public async getAllTags() {
+    public async getAllTags(paginationQuery: PaginationQueryDto) {
         try {
-            /**
-             * Fetches all tags from the database and returns them as an array.
-             */
-            return this.tagRepository.find();
+            // Fetch tags from the database through shared pagination provider.
+            return this.paginationProvider.paginateQuery(
+                {
+                    page: paginationQuery.page || 1,
+                    limit: paginationQuery.limit || 10,
+                },
+                this.tagRepository,
+                {
+                    order: { id: 'DESC' },
+                },
+            );
         } catch (error) {
             throwIfServiceUnavailable(error, {
                 message: 'Cannot fetch tags at this moment',

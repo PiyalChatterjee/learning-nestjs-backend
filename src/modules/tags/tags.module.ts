@@ -5,6 +5,7 @@ import { Post } from '../posts/post.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TagsService } from './providers/tags.service';
 import { TagCreateManyProvider } from './providers/tag-create-many.provider';
+import { PaginationModule } from '../../common/paginations/pagination.module';
 
 /**
  * Tags module managing blog post tags and their relationships.
@@ -13,7 +14,7 @@ import { TagCreateManyProvider } from './providers/tag-create-many.provider';
  */
 @Module({
   controllers: [TagsController],
-  imports: [TypeOrmModule.forFeature([Tag, Post])],
+  imports: [TypeOrmModule.forFeature([Tag, Post]), PaginationModule],
   providers: [TagsService, TagCreateManyProvider],
 })
 export class TagsModule {}

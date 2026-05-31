@@ -23,6 +23,8 @@ import profileConfig from '../config/profile.config';
 import { ConfigType } from '@nestjs/config';
 import { UserCreateManyProvider } from './user-create-many.provider';
 import { CreateManyUsersDto } from '../dtos/create-many-users.dto';
+import { PaginationQueryDto } from '../../../common/paginations/dtos/pagination-query.dto';
+import { PaginationProvider } from '../../../common/paginations/provider/pagination.provider';
 
 /**
  * Internal representation of persisted user data.
@@ -56,6 +58,7 @@ export class UsersService {
    * Inject User Repository to manage user data persistence and retrieval from the database. This allows us to perform CRUD operations on user entities using TypeORM's repository pattern, abstracting away the underlying database interactions and providing a clean interface for working with user data in our service.
    * Inject profile configuration to access any profile-related settings defined in the application's configuration files. This allows us to utilize configuration values that may be necessary for user-related operations, such as API keys, feature flags, or other settings that can be defined in the profile configuration.
    * Inject create many provider to handle batch user creation logic in a separate provider class, allowing us to keep our service methods focused and maintain separation of concerns. This also allows us to reuse the batch creation logic in different parts of the application if needed, while keeping it encapsulated within its own provider.
+   * Inject pagination provider to handle pagination logic for fetching users in a consistent way across the application, allowing us to easily paginate user results when retrieving lists of users from the database. This promotes code reuse and keeps our service methods clean and focused on their core responsibilities.
    */
   constructor(
     @Inject(forwardRef(() => AuthService))
@@ -67,6 +70,7 @@ export class UsersService {
     private readonly profileConfiguration: ConfigType<typeof profileConfig>,
 
     private readonly userCreateManyProvider: UserCreateManyProvider,
+    private readonly paginationProvider: PaginationProvider,
   ) {}
   // Service methods will go here, utilizing authService for authentication checks and userRepository for database operations.
 
@@ -133,7 +137,7 @@ export class UsersService {
   /**
    * Returns a paginated list of users.
    */
-  public async getAllUsers(limit: number, page: number) {
+  public async getAllUsers(paginationQuery: PaginationQueryDto) {
     try {
       // verify the caller is authenticated
       const isAuthenticated = this.authService.isAuthenticated('SAMPLE_TOKEN');
@@ -141,19 +145,27 @@ export class UsersService {
         throw new Error('Unauthorized');
       }
 
-      // calculate pagination offset and fetch the page from the database
-      const offset = (page - 1) * limit;
-      const users = await this.userRepository.find({
-        skip: offset,
-        take: limit,
-      });
+      // paginate users through the shared pagination provider
+      const users = await this.paginationProvider.paginateQuery(
+        {
+          page: paginationQuery.page || 1,
+          limit: paginationQuery.limit || 10,
+        },
+        this.userRepository,
+        {
+          order: { id: 'DESC' },
+        },
+      );
 
-      // shape and return the response
-      return users.map((user) => ({
-        id: user.id,
-        name: `${user.firstName} ${user.lastName ?? ''}`.trim(),
-        email: user.email,
-      }));
+      // shape and return the paginated response
+      return {
+        ...users,
+        data: users.data.map((user) => ({
+          id: user.id,
+          name: `${user.firstName} ${user.lastName ?? ''}`.trim(),
+          email: user.email,
+        })),
+      };
     } catch (error) {
       throwIfServiceUnavailable(error, {
         message: 'Cannot fetch users at this moment',

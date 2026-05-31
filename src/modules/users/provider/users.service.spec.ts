@@ -5,6 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../user.entity';
 import profileConfig from '../config/profile.config';
 import { UserCreateManyProvider } from './user-create-many.provider';
+import { PaginationProvider } from '../../../common/paginations/provider/pagination.provider';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -27,6 +28,10 @@ describe('UsersService', () => {
         },
         {
           provide: UserCreateManyProvider,
+          useValue: {},
+        },
+        {
+          provide: PaginationProvider,
           useValue: {},
         },
       ],

@@ -8,13 +8,15 @@ import {
   Patch,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { PostsService } from './provider/posts.service';
-import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { CreatePostDto } from './dtos/create-post.dto';
 import { CreateManyPostsDto } from './dtos/create-many-posts.dto';
 import { PatchPostDto } from './dtos/patch-post.dto';
 import { UpdatePostDto } from './dtos/update-post.dto';
+import { GetPostsDto } from './dtos/get-posts.dto';
 
 /**
  * Handles HTTP routes for post retrieval and mutation.
@@ -34,8 +36,10 @@ export class PostsController {
   @Get()
   @ApiOperation({ summary: 'Get all posts', description: 'Fetch all posts from the database' })
   @ApiResponse({ status: 200, description: 'Successfully retrieved all posts' })
-  public getAllPosts() {
-    return this.postsService.getAllPosts();
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number for pagination (default: 1)' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of posts per page for pagination (default: 10)' })
+  public getAllPosts(@Query() getPostsDto: GetPostsDto) {
+    return this.postsService.getAllPosts(getPostsDto);
   }
 
   /**
