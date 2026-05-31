@@ -28,7 +28,7 @@ export class MetaOptionsService {
   /**
    * Creates and persists a metadata option entity.
    */
-  public async createMetaOption(postMetaOptionDto: PostMetaOptionDto) {
+  public async createMetaOption(postMetaOptionDto: PostMetaOptionDto): Promise<MetaOption> {
     try {
       /**
        * Create a new MetaOption instance from the provided DTO and persist it to the database.

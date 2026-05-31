@@ -19,6 +19,14 @@ import { formatPostWithAuthor } from '../../../helpers/format-post-with-author.h
 import { MetaOption } from '../../meta-options/meta-option.entity';
 import { GetPostsDto } from '../dtos/get-posts.dto';
 import { PaginationProvider } from '../../../common/paginations/provider/pagination.provider';
+import { IPaginated } from '../../../common/paginations/interfaces/paginated.interface';
+import { TDeleteResult } from '../../../common/types/delete-result.type';
+
+/**
+ * Public-facing post shape returned from all read and write operations.
+ * Derived from the {@link formatPostWithAuthor} helper output.
+ */
+type TFormattedPost = ReturnType<typeof formatPostWithAuthor>;
 
 /**
  * Manages post data operations.
@@ -46,7 +54,9 @@ export class PostsService {
   /**
    * Returns all posts stored in the database.
    */
-  public async getAllPosts(getPostsDto: GetPostsDto) {
+  public async getAllPosts(
+    getPostsDto: GetPostsDto,
+  ): Promise<IPaginated<TFormattedPost>> {
     try {
       // fetch all posts from the database using pagination provider
       const posts = await this.paginationProvider.paginateQuery(
@@ -87,7 +97,7 @@ export class PostsService {
   /**
    * Returns one post by id.
    */
-  public async getPostById(postId: number) {
+  public async getPostById(postId: number): Promise<TFormattedPost> {
     try {
       // fetch the post or throw 404 if not found
       const post = assertResourceExists(
@@ -119,7 +129,7 @@ export class PostsService {
   /**
    * Creates and stores a new post.
    */
-  public async createPost(createPostDto: CreatePostDto) {
+  public async createPost(createPostDto: CreatePostDto): Promise<TFormattedPost> {
     try {
       // validate author email format
       validateEmail(createPostDto.authorEmail);
@@ -179,7 +189,7 @@ export class PostsService {
    * author lookup, tag resolution, and transactional persistence.
    * See PostCreateManyProvider for detailed bulk operation semantics.
    */
-  public async createManyPosts(createManyPostsDto: CreateManyPostsDto) {
+  public async createManyPosts(createManyPostsDto: CreateManyPostsDto): Promise<TFormattedPost[]> {
     const posts =
       await this.postCreateManyProvider.createManyPosts(createManyPostsDto);
     return posts.map((post) => formatPostWithAuthor(post));
@@ -188,7 +198,7 @@ export class PostsService {
   /**
    * Replaces an existing post with a full payload.
    */
-  public async updatePost(postId: number, updatePostDto: UpdatePostDto) {
+  public async updatePost(postId: number, updatePostDto: UpdatePostDto): Promise<TFormattedPost> {
     try {
       // fetch the post or throw 404 if not found
       const post = assertResourceExists(
@@ -242,7 +252,7 @@ export class PostsService {
   /**
    * Updates an existing post using a partial payload.
    */
-  public async patchPost(postId: number, patchPostDto: PatchPostDto) {
+  public async patchPost(postId: number, patchPostDto: PatchPostDto): Promise<TFormattedPost> {
     try {
       // fetch the post or throw 404 if not found
       const post = assertResourceExists(
@@ -305,7 +315,7 @@ export class PostsService {
   /**
    * Removes a post by id.
    */
-  public async deletePost(postId: number) {
+  public async deletePost(postId: number): Promise<TDeleteResult> {
     try {
       // fetch the post or throw 404 if not found
       const post = assertResourceExists(

@@ -1,6 +1,4 @@
-GET http://localhost:8000/v1/posts
-?limit=1
-  &page=2
+GET http://localhost:8000/v1/posts?limit=1&page=2
 
 
 GET http://localhost:8000/v1/posts/12

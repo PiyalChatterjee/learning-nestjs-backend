@@ -12,6 +12,16 @@ import { throwIfServiceUnavailable } from '../../../common/exceptions/service-un
 import { throwIfUnexpectedError } from '../../../common/exceptions/internal-error.helper';
 import { PaginationQueryDto } from '../../../common/paginations/dtos/pagination-query.dto';
 import { PaginationProvider } from '../../../common/paginations/provider/pagination.provider';
+import { IPaginated } from '../../../common/paginations/interfaces/paginated.interface';
+import { TDeleteResult } from '../../../common/types/delete-result.type';
+
+/**
+ * Shape returned when fetching a tag with its associated posts.
+ */
+type TTagWithPosts = {
+  tag: Tag;
+  posts: Post[];
+};
 
 /**
  * Handles persistence operations for tags.
@@ -43,7 +53,7 @@ export class TagsService {
     /**
      * Creates and persists a tag entity.
      */
-    public async createTag(postTagDto: PostTagDto) {
+    public async createTag(postTagDto: PostTagDto): Promise<Tag> {
         try {
             /**
              * Create a new Tag instance with the provided name and persist it to the database.
@@ -77,14 +87,14 @@ export class TagsService {
      * duplicate detection, and transactional persistence.
      * See TagCreateManyProvider for detailed bulk operation semantics.
      */
-    public async createManyTags(createManyTagsDto: CreateManyTagsDto) {
+    public async createManyTags(createManyTagsDto: CreateManyTagsDto): Promise<Tag[]> {
         return this.tagCreateManyProvider.createManyTags(createManyTagsDto);
     }
 
     /**
      * Returns all tags from storage.
      */
-    public async getAllTags(paginationQuery: PaginationQueryDto) {
+    public async getAllTags(paginationQuery: PaginationQueryDto): Promise<IPaginated<Tag>> {
         try {
             // Fetch tags from the database through shared pagination provider.
             return this.paginationProvider.paginateQuery(
@@ -121,7 +131,7 @@ export class TagsService {
      * Posts are fetched via a separate query on postRepository to avoid
      * a circular join cycle caused by eager Post.tags pointing back to Tag.
      */
-    public async getTagWithPosts(tagId: number) {
+    public async getTagWithPosts(tagId: number): Promise<TTagWithPosts> {
         try {
             const tag = assertResourceExists(
                 await this.tagRepository.findOne({ where: { id: tagId } }),
@@ -158,7 +168,7 @@ export class TagsService {
     /**
      * Soft-deletes a tag by id using the DeleteDateColumn field.
      */
-    public async deleteTag(tagId: number) {
+    public async deleteTag(tagId: number): Promise<TDeleteResult> {
         try {
             const tag = assertResourceExists(
                 await this.tagRepository.findOne({ where: { id: tagId } }),

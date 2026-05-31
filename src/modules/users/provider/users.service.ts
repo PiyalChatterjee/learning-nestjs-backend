@@ -25,14 +25,25 @@ import { UserCreateManyProvider } from './user-create-many.provider';
 import { CreateManyUsersDto } from '../dtos/create-many-users.dto';
 import { PaginationQueryDto } from '../../../common/paginations/dtos/pagination-query.dto';
 import { PaginationProvider } from '../../../common/paginations/provider/pagination.provider';
+import { IPaginated } from '../../../common/paginations/interfaces/paginated.interface';
+import { TDeleteResult } from '../../../common/types/delete-result.type';
 
 /**
  * Internal representation of persisted user data.
  */
-type UserRecord = {
+type TUserRecord = {
   id: number;
   firstName: string;
   lastName?: string;
+  email: string;
+};
+
+/**
+ * Public-facing user shape returned from read operations.
+ */
+type TUserSummary = {
+  id: number;
+  name: string;
   email: string;
 };
 
@@ -44,7 +55,7 @@ export class UsersService {
   /**
    * In-memory users collection for local learning scenarios.
    */
-  private readonly users: UserRecord[] = [
+  private readonly users: TUserRecord[] = [
     {
       id: 1,
       firstName: 'John',
@@ -77,7 +88,7 @@ export class UsersService {
   /**
    * Creates a new user record.
    */
-  public async createUser(createUserDto: CreateUserDto) {
+  public async createUser(createUserDto: CreateUserDto): Promise<User> {
     try {
       // validate email format
       validateEmail(createUserDto.email);
@@ -130,14 +141,14 @@ export class UsersService {
    * duplicate email detection, and transactional persistence.
    * See UserCreateManyProvider for detailed bulk operation semantics.
    */
-  public async createManyUsers(createManyUsersDto: CreateManyUsersDto) {
+  public async createManyUsers(createManyUsersDto: CreateManyUsersDto): Promise<User[]> {
     return await this.userCreateManyProvider.createManyUsers(createManyUsersDto);
   }
 
   /**
    * Returns a paginated list of users.
    */
-  public async getAllUsers(paginationQuery: PaginationQueryDto) {
+  public async getAllUsers(paginationQuery: PaginationQueryDto): Promise<IPaginated<TUserSummary>> {
     try {
       // verify the caller is authenticated
       const isAuthenticated = this.authService.isAuthenticated('SAMPLE_TOKEN');
@@ -188,7 +199,7 @@ export class UsersService {
   /**
    * Returns one user by id.
    */
-  public async getUserById(id: number) {
+  public async getUserById(id: number): Promise<TUserSummary> {
     try {
       // verify the caller is authenticated
       const isAuthenticated = this.authService.isAuthenticated('SAMPLE_TOKEN');
@@ -231,7 +242,7 @@ export class UsersService {
   /**
    * Replaces a user record with full update values.
    */
-  public async updateUser(id: number, updateUserDto: UpdateUserDto) {
+  public async updateUser(id: number, updateUserDto: UpdateUserDto): Promise<TUserSummary> {
     try {
       // validate email format if provided
       validateEmail(updateUserDto.email);
@@ -288,7 +299,7 @@ export class UsersService {
   /**
    * Updates selected fields on a user record.
    */
-  public async patchUser(id: number, patchUserDto: PatchUserDto) {
+  public async patchUser(id: number, patchUserDto: PatchUserDto): Promise<TUserSummary> {
     try {
       // validate email format if provided
       if (patchUserDto.email) {
@@ -347,7 +358,7 @@ export class UsersService {
   /**
    * Removes a user by id.
    */
-  public async deleteUser(id: number) {
+  public async deleteUser(id: number): Promise<TDeleteResult> {
     try {
       // fetch the user or throw 404 if not found
       const user = assertResourceExists(

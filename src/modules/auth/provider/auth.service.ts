@@ -19,7 +19,7 @@ export class AuthService {
   /**
    * Validates credentials and returns an access token placeholder.
    */
-  public login(email: string, password: string, id: number): any {
+  public login(email: string, password: string, id: number): string | undefined {
     try {
       // Validate inputs are not empty
       if (!email || !password) {
