@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TagsService } from './tags.service';
+import { TagCreateManyProvider } from './tag-create-many.provider';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Tag } from '../tag.entity';
 import { Post } from '../../posts/post.entity';
@@ -18,6 +19,12 @@ describe('TagsService', () => {
         {
           provide: getRepositoryToken(Post),
           useValue: {},
+        },
+        {
+          provide: TagCreateManyProvider,
+          useValue: {
+            createManyTags: jest.fn(),
+          },
         },
       ],
     }).compile();

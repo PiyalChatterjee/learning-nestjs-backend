@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PostsController } from './posts.controller';
 import { PostsService } from './provider/posts.service';
+import { PostCreateManyProvider } from './provider/post-create-many.provider';
 import { UsersModule } from '../users/users.module';
 import { AuthService } from '../auth/provider/auth.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -15,7 +16,7 @@ import { TagRelationValidator } from '../../common/validators/tag-relation.valid
  */
 @Module({
   controllers: [PostsController],
-  providers: [PostsService, AuthService, TagRelationValidator],
+  providers: [PostsService, PostCreateManyProvider, AuthService, TagRelationValidator],
   imports: [UsersModule, TypeOrmModule.forFeature([Post, User, Tag, MetaOption])],
 })
 export class PostsModule {}

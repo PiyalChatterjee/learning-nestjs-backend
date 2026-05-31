@@ -4,7 +4,7 @@
 
 Build a course-aligned backend in small learning increments, with proof of implementation and a clear next-step backlog.
 
-## Current Snapshot (2026-05-29)
+## Current Snapshot (2026-06-01)
 
 - Core app bootstrap is in place with versioned routing and validation.
 - Users module has full controller-level CRUD-style routes with DTO validation and TypeORM repository-backed service methods.
@@ -34,6 +34,16 @@ Build a course-aligned backend in small learning increments, with proof of imple
 	- app startup no longer hard-fails when PostgreSQL is down
 	- background retry bootstrap initializes DB when service comes back
 	- DB-down request-time failures are mapped to 503 and recover to normal responses after reconnection
+- **Bulk operations & transactions fully implemented and tested** for users, posts, and tags modules:
+	- `UserCreateManyProvider` with atomic transactions for users (max 100) — tested with 4 users
+	- `PostCreateManyProvider` with atomic transactions for posts (max 50) — tested with 3 posts and tag resolution
+	- `TagCreateManyProvider` with atomic transactions for tags (max 100) — tested with 3 tags
+	- All providers: batch validation (size limits, empty batch checks, duplicate slug/email detection)
+	- All providers: use `bulk-operation-error.helper` for cascading error handling
+	- All-or-nothing semantics with transaction rollback on any validation or DB error
+	- All three endpoints wired and documented in HTTP files
+	- Pattern is reusable for future bulk operations (meta-options, etc.)
+	- Successful manual tests confirm atomic transaction behavior working correctly
 
 ## Week-by-Week Status
 
@@ -114,27 +124,46 @@ Status: Complete (2026-05-29)
 - AuthService enhanced with token presence checks and auth-failure exception mapping.
 - UsersService enhanced with duplicate email detection on update/patch operations.
 
-## Week 8: Quality + Optional Docker Exploration
+## Week 8: Bulk Operations & Transactions (High-Priority Modules)
 
-Status: In Progress (DB resiliency milestone completed)
+Status: Complete (2026-06-01)
 
-- Unit test scaffolding exists and targeted module tests pass.
-- Test files present for users, posts, tags, meta-options, and auth controllers/services.
-- E2E test structure in place (`test/app.e2e-spec.ts`) ready for integration scenarios.
-- DB resilience and recovery flow implemented and verified:
-	- `manualInitialization: true` in TypeORM config keeps server bootable during DB outage
-	- `DatabaseConnectionBootstrap` retries initialization in background
-	- runtime DB-init/metadata failures are mapped to 503 in service-unavailable helper
-- Docker exploration not yet started; will be optional learning extension after test coverage solidifies.
+- **Users module:** Bulk creation via `UserCreateManyProvider` (max 100 users)
+  - Batch size validation, duplicate email detection, atomic transaction
+- **Posts module:** Bulk creation via `PostCreateManyProvider` (max 50 posts)
+  - Handles tag resolution and author lookup atomically
+  - Batch size validation, duplicate slug detection, atomic transaction
+- **Tags module:** Bulk creation via `TagCreateManyProvider` (max 100 tags)
+  - Batch size validation, duplicate slug detection, atomic transaction
+- Reusable `bulk-operation-error.helper.ts` for cascading error handling across all bulk providers
+- New Swagger endpoints:
+  - `POST /users/bulk` — bulk user creation
+  - `POST /posts/bulk` — bulk post creation with tags
+  - `POST /tags/bulk` — bulk tag creation
+- All tests pass (12 test suites, 12 passed); providers mocked in service tests
+- Pattern is documented and ready for reuse in meta-options or future modules
+
+## Week 9: Quality + Optional Docker Exploration
+
+Status: In Progress
+
+- E2E test coverage for bulk create success and partial failure handling (transaction rollback scenarios).
+- Unit test expansion for new bulk operation patterns and transaction rollback scenarios.
+- Auth guards and route protection (at least one JWT-protected endpoint).
+- Optional: Docker exploration for containerized local development.
+- Optional: Extend bulk operations pattern to meta-options module.
+- Auth guards and route protection (JWT verification on protected endpoints).
 
 ## Immediate Next Priorities
 
-1. **Expand test coverage** for service behavior (tag resolution, relationship integrity, error mapping including new exception helpers).
-2. **Add auth guards** and route protection (at least one protected users/posts endpoint with JWT verification).
-3. **Strengthen DB lifecycle further** by replacing `synchronize: true` with proper migration strategy and seeds.
-4. **Integration tests** for `post_tags` write/read behavior, author-post ownership, and metadata nesting.
-5. **Advanced query patterns**: author-centric queries, inverse mappings (users -> posts), pagination enhancements.
-6. **Optional:** Docker exploration for containerized local development and deployment simulation.
+1. **E2E test coverage** for bulk endpoints (users, posts, tags): success cases, batch size limits, duplicate detection, transaction rollback on conflict.
+2. **Auth guards and route protection** — implement JWT verification on at least one protected users/posts endpoint using the `unauthorized` and `forbidden` helpers.
+3. **Unit test expansion** for bulk providers: test transaction rollback scenarios, batch validation edge cases.
+4. **Strengthen DB lifecycle further** by replacing `synchronize: true` with proper migration strategy and seeds.
+5. **Integration tests** for `post_tags` write/read behavior, author-post ownership, and metadata nesting in bulk scenarios.
+6. **Advanced query patterns**: author-centric queries, inverse mappings (users -> posts), pagination enhancements.
+7. **Optional:** Extend bulk operations to meta-options module.
+8. **Optional:** Docker exploration for containerized local development and deployment simulation.
 
 ## Continuous Tracking Rules
 
@@ -156,3 +185,5 @@ Status: In Progress (DB resiliency milestone completed)
 | 2026-05-23 | Tags relationship integration + validation cleanup | Linked posts-tags via many-to-many (`post_tags`), added common tag relation validator, fixed tags DTO per-item validation, and aligned HTTP payloads with URL tag slugs | src/modules/posts/post.entity.ts, src/common/validators/tag-relation.validator.ts, src/modules/posts/dtos/create-post.dto.ts, src/modules/posts/provider/posts.service.ts | 5 | Should API accept tag IDs internally while keeping slugs as public identifiers? |
 | 2026-05-23 | Reusable DB exception handling pattern | Added common helper to translate unique DB errors into ConflictException and reused it across create/update/patch post writes | src/common/exceptions/unique-constraint.helper.ts, src/modules/posts/provider/posts.service.ts | 5 | Generalize exception mapping into a global DB exception filter later? |
 | 2026-05-29 | DB outage resilience + recovery | Kept API process bootable during DB outage, added background DB reconnection bootstrap, and mapped uninitialized/metadata DB errors to 503 for request-time handling | src/app.module.ts, src/database/database-connection.bootstrap.ts, src/common/exceptions/service-unavailable.helper.ts, docs/learning-issues.md | 5 | Add health endpoint that reports DB connectivity separately from API process health? |
+| 2026-06-01 | Bulk operations + transactions | Created UserCreateManyProvider with atomic QueryRunner transactions; batch validation (size/duplicates); bulk-operation-error.helper for cascading error handling; pattern reusable for other modules | src/modules/users/provider/user-create-many.provider.ts, src/modules/users/dtos/create-many-users.dto.ts, src/common/exceptions/bulk-operation-error.helper.ts, docs/roadmap.md | 5 | Wire bulk endpoint in UsersController with Swagger decorators? |
+| 2026-06-01 | Bulk operations expansion (posts & tags) | Extended bulk operations pattern to posts (with tag resolution) and tags modules; all high-priority modules now have atomic bulk create endpoints with full validation and transaction support | src/modules/posts/provider/post-create-many.provider.ts, src/modules/posts/dtos/create-many-posts.dto.ts, src/modules/posts/posts.controller.ts, src/modules/tags/providers/tag-create-many.provider.ts, src/modules/tags/dtos/create-many-tags.dto.ts, src/modules/tags/tags.controller.ts, docs/roadmap.md | 5 | E2E tests for bulk endpoints? Meta-options bulk operations? |

@@ -121,7 +121,10 @@ export class UsersService {
   }
 
   /**
-   * Create many user records
+   * Creates multiple user records in a single atomic transaction.
+   * Delegates to UserCreateManyProvider which handles batch validation,
+   * duplicate email detection, and transactional persistence.
+   * See UserCreateManyProvider for detailed bulk operation semantics.
    */
   public async createManyUsers(createManyUsersDto: CreateManyUsersDto) {
     return await this.userCreateManyProvider.createManyUsers(createManyUsersDto);

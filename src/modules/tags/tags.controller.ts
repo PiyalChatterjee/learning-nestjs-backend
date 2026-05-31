@@ -9,6 +9,8 @@ import {
 } from '@nestjs/common';
 import { TagsService } from './providers/tags.service';
 import { PostTagDto } from './dtos/post-tag.dto';
+import { CreateManyTagsDto } from './dtos/create-many-tags.dto';
+import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { formatTag } from '../../helpers/format-tag.helper';
 import { formatPostSummary } from '../../helpers/format-post-summary.helper';
 
@@ -32,6 +34,26 @@ export class TagsController {
   public async createTag(@Body() postTagDto: PostTagDto) {
     const tag = await this.tagsService.createTag(postTagDto);
     return formatTag(tag);
+  }
+
+  /**
+   * Creates multiple tags in a single atomic transaction.
+   */
+  @Post('create-many')
+  @ApiOperation({
+    summary: 'Create multiple tags in bulk',
+    description: 'Create multiple tags in a single atomic transaction. All tags are validated and persisted together, or all are rolled back on any error.',
+  })
+  @ApiResponse({ status: 201, description: 'Tags created successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation failed (batch too large, empty batch, duplicate slugs, or invalid tag data)',
+  })
+  @ApiResponse({ status: 409, description: 'Duplicate slug conflict' })
+  @ApiBody({ type: CreateManyTagsDto })
+  public async createManyTags(@Body() createManyTagsDto: CreateManyTagsDto) {
+    const tags = await this.tagsService.createManyTags(createManyTagsDto);
+    return tags.map(formatTag);
   }
 
   /**

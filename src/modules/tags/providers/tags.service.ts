@@ -4,6 +4,8 @@ import { Tag } from '../tag.entity';
 import { Post } from '../../posts/post.entity';
 import { Repository } from 'typeorm';
 import { PostTagDto } from '../dtos/post-tag.dto';
+import { CreateManyTagsDto } from '../dtos/create-many-tags.dto';
+import { TagCreateManyProvider } from './tag-create-many.provider';
 import { assertResourceExists } from '../../../common/exceptions/not-found.helper';
 import { throwIfRequestTimeout } from '../../../common/exceptions/request-timeout.helper';
 import { throwIfServiceUnavailable } from '../../../common/exceptions/service-unavailable.helper';
@@ -27,6 +29,7 @@ export class TagsService {
         private readonly tagRepository: Repository<Tag>,
         @InjectRepository(Post)
         private readonly postRepository: Repository<Post>,
+        private readonly tagCreateManyProvider: TagCreateManyProvider,
     ) {}
 
     /**
@@ -58,6 +61,16 @@ export class TagsService {
             });
             throw error;
         }
+    }
+
+    /**
+     * Creates multiple tags in a single atomic transaction.
+     * Delegates to TagCreateManyProvider which handles batch validation,
+     * duplicate detection, and transactional persistence.
+     * See TagCreateManyProvider for detailed bulk operation semantics.
+     */
+    public async createManyTags(createManyTagsDto: CreateManyTagsDto) {
+        return this.tagCreateManyProvider.createManyTags(createManyTagsDto);
     }
 
     /**

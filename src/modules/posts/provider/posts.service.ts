@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CreatePostDto } from '../dtos/create-post.dto';
 import { PatchPostDto } from '../dtos/patch-post.dto';
 import { UpdatePostDto } from '../dtos/update-post.dto';
+import { CreateManyPostsDto } from '../dtos/create-many-posts.dto';
 import { assertResourceExists } from '../../../common/exceptions/not-found.helper';
 import { throwIfUniqueConstraintViolation } from '../../../common/exceptions/unique-constraint.helper';
 import { throwIfRequestTimeout } from '../../../common/exceptions/request-timeout.helper';
@@ -9,6 +10,7 @@ import { validateEmail } from '../../../common/exceptions/bad-request.helper';
 import { throwIfServiceUnavailable } from '../../../common/exceptions/service-unavailable.helper';
 import { throwIfUnexpectedError } from '../../../common/exceptions/internal-error.helper';
 import { TagRelationValidator } from '../../../common/validators/tag-relation.validator';
+import { PostCreateManyProvider } from './post-create-many.provider';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Post } from '../post.entity';
 import { User } from '../../users/user.entity';
@@ -24,6 +26,7 @@ export class PostsService {
   /**
    * Inject Post Repository to manage post data persistence and retrieval from the database.
    * Inject User Repository to look up authors by email when creating posts.
+   * Inject PostCreateManyProvider for bulk post creation with transaction support.
    */
   constructor(
     @InjectRepository(Post)
@@ -33,6 +36,7 @@ export class PostsService {
     @InjectRepository(MetaOption)
     private readonly metaOptionRepository: Repository<MetaOption>,
     private readonly tagRelationValidator: TagRelationValidator,
+    private readonly postCreateManyProvider: PostCreateManyProvider,
   ) {}
 
   /**
@@ -150,6 +154,19 @@ export class PostsService {
       });
       throw error;
     }
+  }
+
+  /**
+   * Creates multiple posts in a single atomic transaction.
+   * Delegates to PostCreateManyProvider which handles batch validation,
+   * author lookup, tag resolution, and transactional persistence.
+   * See PostCreateManyProvider for detailed bulk operation semantics.
+   */
+  public async createManyPosts(createManyPostsDto: CreateManyPostsDto) {
+    const posts = await this.postCreateManyProvider.createManyPosts(
+      createManyPostsDto,
+    );
+    return posts.map((post) => formatPostWithAuthor(post));
   }
 
   /**

@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PostsService } from './posts.service';
+import { PostCreateManyProvider } from './post-create-many.provider';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Post } from '../post.entity';
 import { User } from '../../users/user.entity';
@@ -29,6 +30,12 @@ describe('PostsService', () => {
           provide: TagRelationValidator,
           useValue: {
             resolveTagsOrThrow: jest.fn(),
+          },
+        },
+        {
+          provide: PostCreateManyProvider,
+          useValue: {
+            createManyPosts: jest.fn(),
           },
         },
       ],

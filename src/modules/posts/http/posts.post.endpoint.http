@@ -81,3 +81,50 @@ Content-Type: application/json
   },
   "authorEmail": "john.doe@example.com"
 }
+
+### Bulk create multiple posts in a single atomic transaction
+### All posts are created together, or all are rolled back on any error
+POST http://localhost:8000/v1/posts/create-many
+Content-Type: application/json
+
+{
+  "posts": [
+    {
+      "title": "Advanced NestJS Patterns",
+      "postType": "post",
+      "slug": "advanced-nestjs-patterns-bulk",
+      "status": "draft",
+      "content": "Deep dive into advanced NestJS design patterns and best practices",
+      "publishOn": "2026-06-01T10:00:00.000Z",
+      "tags": [
+        "https://example.com/tags/nestjs",
+        "https://example.com/tags/typescript"
+      ],
+      "authorEmail": "john.doe@example.com"
+    },
+    {
+      "title": "Docker Production Deployment",
+      "postType": "post",
+      "slug": "docker-production-deployment-bulk",
+      "status": "draft",
+      "content": "Production-ready Docker configurations and deployment strategies",
+      "publishOn": "2026-06-02T10:00:00.000Z",
+      "tags": [
+        "https://example.com/tags/docker"
+      ],
+      "authorEmail": "jane.doe@example.com"
+    },
+    {
+      "title": "Kubernetes Scaling Guide",
+      "postType": "post",
+      "slug": "kubernetes-scaling-guide-bulk",
+      "status": "draft",
+      "content": "Learn how to scale applications efficiently with Kubernetes",
+      "publishOn": "2026-06-03T10:00:00.000Z",
+      "tags": [
+        "https://example.com/tags/kubernetes"
+      ],
+      "authorEmail": "alice.smith@example.com"
+    }
+  ]
+}

@@ -136,6 +136,10 @@ export class UsersController {
     return this.usersService.createUser(dto);
   }
 
+  /**
+   * Creates multiple users in a single atomic transaction.
+   * All users are validated and persisted together, or all are rolled back on any error.
+   */
   @Post('create-many')
   @ApiOperation({ summary: 'Create multiple users in a batch operation' })
   @ApiResponse({ status: 201, description: 'Successfully created multiple users' })

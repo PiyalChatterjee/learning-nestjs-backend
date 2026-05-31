@@ -51,11 +51,42 @@ Content-Type: application/json
   "slug": "https://example.com/tags/testing"
 }
 
-
+### Create a tag for deletion testing
 POST http://localhost:8000/v1/tags
 Content-Type: application/json
 
 {
   "name": "Testing Deletion",
   "slug": "https://example.com/tags/testing-deletion"
+}
+
+### Bulk create multiple tags in a single atomic transaction
+### All tags are created together, or all are rolled back on any error
+POST http://localhost:8000/v1/tags/create-many
+Content-Type: application/json
+
+{
+  "tags": [
+    {
+      "name": "Python",
+      "slug": "https://example.com/tags/python",
+      "description": "Python programming language and ecosystem"
+    },
+    {
+      "name": "Go",
+      "slug": "https://example.com/tags/go",
+      "description": "Go programming language for building concurrent systems"
+    },
+    {
+      "name": "Rust",
+      "slug": "https://example.com/tags/rust",
+      "description": "Rust programming language for systems programming"
+    },
+    {
+      "name": "GraphQL",
+      "slug": "https://example.com/tags/graphql",
+      "description": "GraphQL query language and API standard",
+      "featureImageUrl": "https://example.com/images/graphql.png"
+    }
+  ]
 }

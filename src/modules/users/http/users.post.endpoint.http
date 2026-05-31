@@ -20,7 +20,9 @@ Content-Type: application/json
     "password": "P@ssw0rd!"
 }
 
-POST http://localhost:8000/v1/users/create-many
+### Bulk create multiple users in a single atomic transaction
+### All users are created together, or all are rolled back on any error
+POST http://localhost:8000/v1/users/bulk
 Content-Type: application/json
 
 {
@@ -36,6 +38,18 @@ Content-Type: application/json
             "lastName": "Johnson",
             "email": "bob.johnson@example.com",
             "password": "BobPassword123!"
+        },
+        {
+            "firstName": "Charlie",
+            "lastName": "Brown",
+            "email": "charlie.brown@example.com",
+            "password": "CharliePass123!"
+        },
+        {
+            "firstName": "Diana",
+            "lastName": "Prince",
+            "email": "diana.prince@example.com",
+            "password": "DianaPass123!"
         }
     ]
 }

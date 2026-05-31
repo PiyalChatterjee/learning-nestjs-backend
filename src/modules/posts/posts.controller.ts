@@ -12,6 +12,7 @@ import {
 import { PostsService } from './provider/posts.service';
 import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { CreatePostDto } from './dtos/create-post.dto';
+import { CreateManyPostsDto } from './dtos/create-many-posts.dto';
 import { PatchPostDto } from './dtos/patch-post.dto';
 import { UpdatePostDto } from './dtos/update-post.dto';
 
@@ -65,6 +66,23 @@ export class PostsController {
   @ApiBody({ type: CreatePostDto })
   public createPost(@Body() createPostDto: CreatePostDto) {
     return this.postsService.createPost(createPostDto);
+  }
+
+  /**
+   * Creates multiple posts in a single atomic transaction.
+   */
+  @Post('create-many')
+  @ApiOperation({ 
+    summary: 'Create multiple posts in bulk', 
+    description: 'Create multiple posts in a single atomic transaction. All posts are validated and persisted together, or all are rolled back on any error.' 
+  })
+  @ApiResponse({ status: 201, description: 'Posts created successfully' })
+  @ApiResponse({ status: 400, description: 'Validation failed (batch too large, empty batch, duplicate slugs, or invalid post data)' })
+  @ApiResponse({ status: 404, description: 'Author not found for one or more posts' })
+  @ApiResponse({ status: 409, description: 'Duplicate slug conflict' })
+  @ApiBody({ type: CreateManyPostsDto })
+  public createManyPosts(@Body() createManyPostsDto: CreateManyPostsDto) {
+    return this.postsService.createManyPosts(createManyPostsDto);
   }
 
   /**

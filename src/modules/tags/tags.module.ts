@@ -4,6 +4,7 @@ import { Tag } from './tag.entity';
 import { Post } from '../posts/post.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TagsService } from './providers/tags.service';
+import { TagCreateManyProvider } from './providers/tag-create-many.provider';
 
 /**
  * Tags module managing blog post tags and their relationships.
@@ -13,6 +14,6 @@ import { TagsService } from './providers/tags.service';
 @Module({
   controllers: [TagsController],
   imports: [TypeOrmModule.forFeature([Tag, Post])],
-  providers: [TagsService],
+  providers: [TagsService, TagCreateManyProvider],
 })
 export class TagsModule {}

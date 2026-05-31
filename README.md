@@ -2,7 +2,7 @@
 
 **Goal:** Structured NestJS backend learning through hands-on implementation of real-world patterns—users, posts, tags, metadata—with focus on persistence, relationships, validation, and reusable architecture.
 
-**Status:** Week 8 In Progress. All core CRUD flows for 4 major entities with many-to-many relationships, validated DTOs, full exception handling layer (8 helpers covering 400/401/403/404/408/409/500/503), database relationships modeled (TypeORM entities), API documentation with Swagger, auth module structure in place, and DB outage resilience enabled.
+**Status:** Week 8 Complete. All core CRUD flows for 4 major entities with many-to-many relationships, validated DTOs, full exception handling layer (8 helpers + bulk-operation helper covering 400/401/403/404/408/409/500/503), database relationships modeled (TypeORM entities), API documentation with Swagger, auth module structure in place, DB outage resilience enabled, and **bulk operations with atomic transactions** implemented for high-priority modules (users, posts, tags).
 
 ## Base Structure
 
@@ -26,7 +26,7 @@
 - **DTO Validation:** Every endpoint enforces request shape via class-validator decorators (enums, URLs, arrays, nested objects).
 - **Relationship Integrity:** Service-level tag resolution rejects requests with missing tags (404), validated on create/update/patch.
 - **Unique Constraint Handling:** DB uniqueness violations (e.g., duplicate slugs) mapped to clean 409 Conflict responses.
-- **Full Exception Layer:** 8 reusable helpers cover every HTTP error scenario at the service layer:
+- **Full Exception Layer:** 9 reusable helpers cover every HTTP error scenario at the service layer:
   - `bad-request.helper` — email format, password strength, field length, required fields (400)
   - `unauthorized.helper` — token presence, user auth state, JWT errors (401)
   - `forbidden.helper` — role validation, resource ownership, role hierarchy (403)
@@ -35,6 +35,12 @@
   - `unique-constraint.helper` — DB unique constraint mapping (409)
   - `internal-error.helper` — unexpected errors with server-side NestJS Logger (500)
   - `service-unavailable.helper` — DB/service connectivity failures (503)
+  - `bulk-operation-error.helper` — cascading error handling for transactional bulk operations (503 → 408 → 500)
+- **Bulk Operations with Atomic Transactions:** All-or-nothing semantics via TypeORM QueryRunner:
+  - `POST /v1/users/bulk` — Atomic user creation (max 100 per batch); validates batch size, detects duplicate emails
+  - `POST /v1/posts/bulk` — Atomic post creation (max 50 per batch); handles tag resolution and author lookup atomically; detects duplicate slugs
+  - `POST /v1/tags/bulk` — Atomic tag creation (max 100 per batch); validates batch size, detects duplicate slugs
+  - All bulk endpoints: rollback entire batch on validation error, DB constraint violation, or missing relationship; response documents affected count and error details
 - **Resilient DB Lifecycle:** API process can boot while DB is down, retries connection in background, and returns 503 for DB-dependent endpoints until DB reconnects.
 - **Swagger Documentation:** All endpoints documented with request/response shapes, error codes, and parameter descriptions.
 - **Compodoc 100% Coverage:** All exports have JSDoc (class, method, property, interface).
@@ -151,6 +157,7 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 
 ### Users
 - `POST /v1/users` - Create user
+- `POST /v1/users/bulk` - Bulk create users (atomic transaction, max 100 per batch)
 - `GET /v1/users` - List all users
 - `GET /v1/users/:id` - Get user by ID
 - `PUT /v1/users/:id` - Replace user
@@ -159,6 +166,7 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 
 ### Posts
 - `POST /v1/posts` - Create post with tags, metadata, author email
+- `POST /v1/posts/bulk` - Bulk create posts (atomic transaction, max 50 per batch; handles tags & authors atomically)
 - `GET /v1/posts` - List all posts with author & tag details
 - `GET /v1/posts/:id` - Get post by ID
 - `PUT /v1/posts/:id` - Full update (replaces tags and metadata)
@@ -167,6 +175,7 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 
 ### Tags
 - `POST /v1/tags` - Create tag
+- `POST /v1/tags/bulk` - Bulk create tags (atomic transaction, max 100 per batch)
 - `GET /v1/tags` - List all tags
 - `GET /v1/tags/:id` - Get tag with associated posts
 - `DELETE /v1/tags/:id` - Soft-delete tag
@@ -186,15 +195,17 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 | Email-Based Author Lookup | Clients reference human identifiers, not internal IDs. |
 | Server-Side Error Logging | Internal errors logged with context via NestJS Logger; generic message returned to client. |
 
-## Next Steps (Post-Week 7)
+## Next Steps (Post-Week 8)
 
-1. Add auth guards and route protection (at least one JWT-protected endpoint using the new `unauthorized`/`forbidden` helpers).
-2. Write unit tests for exception helper behavior (validate each helper throws correctly).
-3. Write integration tests for post-tags-metadata workflows.
-4. Add pagination, filtering, and sorting to list endpoints.
-5. **Migrate to explicit TypeORM migrations** (infrastructure ready in `src/database/data-source.ts`; switch `synchronize: false` when ready; see "Database & Migrations" section).
-6. Explore Docker setup for containerized local development.
-7. Add health endpoints that separate API liveness from DB readiness.
+1. **E2E tests for bulk operations** — test success paths, transaction rollback scenarios, and error responses for users/posts/tags bulk endpoints.
+2. Add auth guards and route protection (at least one JWT-protected endpoint using the new `unauthorized`/`forbidden` helpers).
+3. Write unit tests for new bulk provider patterns and transaction semantics.
+4. Write integration tests for post-tags-metadata workflows with bulk operations.
+5. Extend bulk operations pattern to meta-options module (optional).
+6. Add pagination, filtering, and sorting to list endpoints.
+7. **Migrate to explicit TypeORM migrations** (infrastructure ready in `src/database/data-source.ts`; switch `synchronize: false` when ready; see "Database & Migrations" section).
+8. Explore Docker setup for containerized local development.
+9. Add health endpoints that separate API liveness from DB readiness.
 
 ## Learning Philosophy
 
