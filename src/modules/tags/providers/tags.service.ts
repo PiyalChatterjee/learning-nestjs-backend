@@ -36,12 +36,6 @@ export class TagsService {
      * @param paginationProvider Provider for handling pagination logic.        
      */
     constructor(
-        /**
-         * Inject Tag repository here if you want to persist tags in the database
-         * For this example, we are just returning a mock object without database interaction.
-         * You can use TypeORM or any other ORM to handle database operations for tags.
-         * Inject pagination provider to handle pagination logic for fetching tags.
-         */
         @InjectRepository(Tag)
         private readonly tagRepository: Repository<Tag>,
         @InjectRepository(Post)

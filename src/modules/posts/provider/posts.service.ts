@@ -34,10 +34,13 @@ type TFormattedPost = ReturnType<typeof formatPostWithAuthor>;
 @Injectable()
 export class PostsService {
   /**
-   * Inject Post Repository to manage post data persistence and retrieval from the database.
-   * Inject User Repository to look up authors by email when creating posts.
-   * Inject PostCreateManyProvider for bulk post creation with transaction support.
-   * Inject PaginationProvider for paginating post queries.
+   * Creates dependencies for post management operations.
+   * @param postRepository Repository for persisting and retrieving post entities.
+   * @param userRepository Repository for looking up post authors by email.
+   * @param metaOptionRepository Repository for managing post metadata options.
+   * @param tagRelationValidator Validator for resolving and validating tag relationships.
+   * @param postCreateManyProvider Provider for atomic batch post creation operations.
+   * @param paginationProvider Provider for consistent pagination across post queries.
    */
   constructor(
     @InjectRepository(Post)

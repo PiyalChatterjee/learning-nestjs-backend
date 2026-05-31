@@ -9,7 +9,8 @@ import { throwIfUnexpectedError } from '../../../common/exceptions/internal-erro
 @Injectable()
 export class AuthService {
   /**
-   * Inject the UsersService into the AuthService using dependency injection. This allows us to use the methods defined in the UsersService to handle user-related logic in our authentication service, such as validating user credentials against stored user data.
+   * Creates dependencies for authentication operations.
+   * @param usersService Service for user credential validation and lookup.
    */
   constructor(
     @Inject(forwardRef(() => UsersService))

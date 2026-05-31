@@ -13,14 +13,10 @@ import { throwIfUnexpectedError } from '../../../common/exceptions/internal-erro
 @Injectable()
 export class MetaOptionsService {
   /**
-   * Initializes meta-options persistence dependencies.
+   * Creates dependencies for metadata option management.
+   * @param metaOptionRepository Repository for persisting and retrieving metadata option entities.
    */
   constructor(
-    /**
-     * inject meta option repository here if you want to persist meta options in the database
-     * For this example, we are just returning a mock object without database interaction.
-     * You can use TypeORM or any other ORM to handle database operations for meta options.
-     */
     @InjectRepository(MetaOption)
     private readonly metaOptionRepository: Repository<MetaOption>,
   ) {}
