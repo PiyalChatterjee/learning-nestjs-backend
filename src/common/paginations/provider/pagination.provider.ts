@@ -47,7 +47,7 @@ export class PaginationProvider {
     paginateQuery: PaginationQueryDto,
     repository: Repository<T>,
     options: PaginationOptions<T> = {},
-  ) {
+  ): Promise<IPaginated<T>> {
     const currentPage = paginateQuery.page ?? 1;
     const requestedLimit = paginateQuery.limit ?? 10;
     const limit = Math.min(requestedLimit, MAX_LIMIT);
