@@ -62,42 +62,91 @@
 - Week close note:
 	- Week 1 closed with strong progress; most core build-out happened in Week 0 and was matured, corrected, and relationship-enabled in Week 1.
 
-## Course Coverage This Week
+## Week 2 Summary (2026-05-29)
 
-- Users module progress: CRUD-style controller flow + DTO validation complete for current phase.
-- Posts module progress: full CRUD complete with validated payloads and relationship resolution.
-- Tags module progress: create/get complete with many-to-many integration to posts.
-- Meta-options module progress: create complete with one-to-one integration to posts.
-- Database relationships progress: all 3 major relationship types implemented and tested (M:1, O:1, M:M).
-- Database infrastructure progress: TypeORM DataSource + migration scripts ready (active in Week 2+).
-- Documentation progress (Swagger/Compodoc): Swagger active and fully documented; Compodoc 100% symbol coverage achieved.
-- Auth progress (if covered this week): auth module wiring and basic service checks in place.
-- Advanced concepts covered (guards/interceptors/decorators/serialization): decorators, validation pipe, and DTO serialization covered; guards/interceptors pending.
+- What I completed:
+	- **Full exception handling layer:** Created 8 reusable exception helpers covering all HTTP error scenarios (400, 401, 403, 404, 408, 409, 500, 503) with pattern detection and service-level integration.
+	- **Wrapped all service methods with layered error handling** across users, posts, tags, meta-options, and auth services.
+	- **Database resilience for local learning:** Enabled `manualInitialization: true` in TypeORM config so API can boot and serve gracefully-degraded responses even when PostgreSQL is down; background retry bootstrap reconnects automatically.
+	- **Enhanced validation:** Added email format, password strength, and email-duplicate detection on user update/patch operations.
+	- **Extended tags CRUD:** Implemented `GET /v1/tags/:id` to retrieve tag with associated posts and `DELETE /v1/tags/:id` for soft-deletion.
+	- **Configuration system:** Introduced `registerAs` pattern with app.config.ts, database.config.ts, and Joi-based environment.validation.ts for structured config management.
+	- **Test infrastructure fixes:** Added e2e test scaffolding (`test/jest-e2e.json`, `test/app.e2e-spec.ts`), created `tsconfig.spec.json` to resolve Jest globals in test files, and corrected rootDir handling in package.json.
+	- **Learned eager-loading trade-offs:** Fixed circular eager-loading error by keeping eager-loading on one side only (Post.author, Post.tags) and leaving inverse sides as lazy.
+- What I learned:
+	- Service-level exception mapping must cover DB client-specific error codes, messages, and patterns for consistent HTTP responses.
+	- `manualInitialization: true` allows decoupling HTTP server startup from DB availability—critical for resilience in learning/testing scenarios.
+	- Joi schema validation at ConfigModule level ensures env vars are typed and validated early, catching config errors at startup.
+	- Eager relations on both sides of a bidirectional relationship cause circular recursion; set eager only on the owning/dependent side.
+	- TypeORM soft-delete via `@DeleteDateColumn` and `softRemove()` automatically hides deleted rows from standard queries but preserves audit trail.
+	- Repository injection in a service requires the entity to be listed in the same module's `TypeOrmModule.forFeature([...])`.
+- Where I got blocked:
+	- Port conflicts (EADDRINUSE) from multiple dev servers running simultaneously.
+	- E2E test config file missing, causing test runner to fail.
+	- Jest rootDir change invalidated relative paths in ts-jest config.
+	- TypeORM metadata errors on request-time when DB was down were not caught by existing 503 detection patterns.
+- How I resolved it:
+	- Identified and stopped duplicate dev server processes; kept single running instance.
+	- Added missing `test/jest-e2e.json` config file and minimal e2e test scaffold.
+	- Updated Jest transforms in `package.json` and `test/jest-e2e.json` to use correct tsconfig.spec.json path.
+	- Extended `service-unavailable.helper.ts` pattern detection to include `datasource is not initialized`, `no metadata for`, and other TypeORM runtime initialization error messages.
+- Week close note:
+	- Week 2 solidified the exception-handling foundation and resilience patterns. All service methods now have consistent error mapping. DB can restart independently from API server. Next week: expand test coverage, add auth guards, and begin migration strategy.
+
+
+
+- Users module progress: Full CRUD with exception handling, email validation, email-duplicate detection on update/patch, password strength validation.
+- Posts module progress: Full CRUD with layered exception handling (service unavailable, timeout, bad request, internal error).
+- Tags module progress: Full CRUD including get-by-id with associated posts, soft-delete with @DeleteDateColumn.
+- Meta-options module progress: Create with exception handling (service unavailable, timeout, internal error).
+- Auth progress: Enhanced login/isAuthenticated with token presence checks and auth exception mapping.
+- Database relationships progress: All 3 major relationship types tested; eager-loading corrected on both sides to prevent circular recursion.
+- Database infrastructure progress: Manual DB initialization enabled for non-blocking startup; background retry bootstrap keeps app running during outages; request-time 503 responses when DB is down.
+- Exception handling progress: Full 8-helper layer covering 400/401/403/404/408/409/500/503 across all service methods.
+- Configuration progress: App config, database config, and Joi-based environment validation implemented.
+- Testing progress: E2E test scaffolding added; Jest rootDir/tsconfig.spec.json refactored for proper file resolution.
+- Documentation progress (Swagger/Compodoc): Swagger active and fully documented; Compodoc 100% symbol coverage with enhanced JSDoc for new exception helpers.
+- Advanced concepts covered (guards/interceptors/decorators/serialization): Decorators, validation pipe, DTO serialization, eager-loading trade-offs covered; guards/interceptors pending.
 - Docker exploration progress (optional): not started.
 
 ## Demo Evidence
 
 - Endpoint(s):
-	- `GET /v1/users`, `GET /v1/users/:id`, `POST /v1/users`, `PUT /v1/users/:id`, `PATCH /v1/users/:id`, `DELETE /v1/users/:id`
-	- `GET /v1/posts`, `GET /v1/posts/:id`, `POST /v1/posts`, `PUT /v1/posts/:id`, `PATCH /v1/posts/:id`, `DELETE /v1/posts/:id`
-	- `GET /v1/tags`, `POST /v1/tags`
-	- `POST /v1/meta-options`
+	- Users CRUD: `GET /v1/users`, `GET /v1/users/:id`, `POST /v1/users`, `PUT /v1/users/:id`, `PATCH /v1/users/:id`, `DELETE /v1/users/:id`
+	- Posts CRUD: `GET /v1/posts`, `GET /v1/posts/:id`, `POST /v1/posts`, `PUT /v1/posts/:id`, `PATCH /v1/posts/:id`, `DELETE /v1/posts/:id`
+	- Tags CRUD: `GET /v1/tags`, `POST /v1/tags`, `GET /v1/tags/:id`, `DELETE /v1/tags/:id`
+	- Meta-options: `POST /v1/meta-options`
+- Error responses verified:
+	- 503 Service Unavailable returned when PostgreSQL is down (tested by stopping service)
+	- 503 response recovered to 200 after PostgreSQL restarted (no app restart required)
+	- 404 Not Found for missing resource IDs across all endpoints
+	- 409 Conflict for duplicate email/slug uniqueness violations
+	- 400 Bad Request for invalid email format, weak passwords, missing fields
 - Test(s) added:
-	- Module-level specs for users/posts/tags/meta-options compile and pass in current setup.
+	- Module-level specs for users, posts, tags, meta-options, auth services/controllers compile and pass.
+	- E2E spec added to verify root route returns 404 (baseline for future integration tests).
 - Swagger or API proof:
-	- Swagger UI available at `/api` with 3 major entity groups fully documented.
-- Screenshot/recording link:
-	- Pending.
+	- Swagger UI available at `/api` with 4 major entity groups (users, posts, tags, meta-options) fully documented with error codes.
+- Functionality verified:
+	- Database starts independently without blocking API boot.
+	- Background retry bootstrap retries DB initialization every 5 seconds.
+	- Request-time DB connectivity failures are mapped to 503 and recover after reconnection.
+	- Email validation prevents invalid addresses in create/update/patch.
+	- Password strength validation enforces 8-64 chars, uppercase, lowercase, digit, special char.
+	- Duplicate email detection prevents conflicts on user update/patch.
+	- Tag soft-delete hides deleted rows from default queries but preserves in DB.
+	- HTTPyac endpoint examples updated with new tag delete and post patch operations.
 - Commit/PR refs:
-	- Local working changes currently tracked in workspace.
+	- Local working changes on main branch since May 23 commit a03479c2d16b5d8083de6f4692efec6e907bf9be.
 
 ## Next Week Focus
 
 - Planned lessons:
-	- Activate TypeORM migrations (switch from `synchronize: true` to explicit migration-based schema management).
-	- Add auth guards and JWT-based route protection.
-	- Write integration tests for post-tags-metadata workflows.
-	- Add pagination, filtering, and sorting to list endpoints.
+	- Expand unit test coverage for exception helper behavior and error-mapping patterns.
+	- Add auth guards and JWT-based route protection (at least one protected users/posts endpoint).
+	- Begin migration strategy: switch from `synchronize: true` to explicit TypeORM migrations and seed data.
+	- Write integration tests for post-tags-metadata workflows and tag soft-delete behavior.
+	- Implement pagination, filtering, and sorting helpers for list endpoints.
 - Planned implementation:
 	- Add posts get-by-id/delete (and optional put), then start persistence/repository layer.
 	- Introduce route protection with at least one guard.
