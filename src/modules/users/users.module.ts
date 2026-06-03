@@ -10,6 +10,8 @@ import { UserCreateManyProvider } from './provider/user-create-many.provider';
 import { PaginationModule } from '../../common/paginations/pagination.module';
 import { CreateUserProvider } from './provider/create-user.provider';
 import { FindOneUserByEmailProvider } from './provider/find-one-user-by-email.provider';
+import { JwtModule } from '@nestjs/jwt';
+import { jwtConfig } from '../../config/jwt.config';
 
 /**
  * Users feature module that provides user API endpoints and user service logic.
@@ -27,6 +29,7 @@ import { FindOneUserByEmailProvider } from './provider/find-one-user-by-email.pr
     TypeOrmModule.forFeature([User]),
     ConfigModule.forFeature(profileConfig),
     PaginationModule,
+    JwtModule.registerAsync(jwtConfig),
   ],
   exports: [UsersService, FindOneUserByEmailProvider],
 })

@@ -9,6 +9,7 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { PatchUserDto } from './dtos/patch-user.dto';
@@ -17,6 +18,9 @@ import { UsersService } from './provider/users.service';
 import { ApiQuery, ApiTags, ApiBody, ApiParam, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CreateManyUsersDto } from './dtos/create-many-users.dto';
 import { PaginationQueryDto } from '../../common/paginations/dtos/pagination-query.dto';
+import { AccessTokenGuard } from '../auth/guards/access-token.guard';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { AuthType } from '../auth/enums/auth-type.enum';
 
 /**
  * Exposes user management endpoints.
@@ -131,6 +135,9 @@ export class UsersController {
   /**
    * Creates multiple users in a single atomic transaction.
    * All users are validated and persisted together, or all are rolled back on any error.
+   * This endpoint is ideal for bulk user onboarding scenarios.
+   * The request body should contain an array of user creation DTOs, and the response will return the created user entities.
+   * If any user in the batch fails validation or if there are duplicate emails, the entire operation will fail with an appropriate error message.
    */
   @Post('create-many')
   @ApiOperation({ summary: 'Create multiple users in a batch operation' })

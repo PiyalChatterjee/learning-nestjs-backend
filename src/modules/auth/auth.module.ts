@@ -5,8 +5,8 @@ import { UsersModule } from '../users/users.module';
 import { HashingProvider } from './provider/hashing.provider';
 import { BcryptProvider } from './provider/bcrypt.provider';
 import { SignInProvider } from './provider/sign-in.provider';
-import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { jwtConfig } from '../../config/jwt.config';
 
 /**
  * Authentication module providing auth services and controllers.
@@ -26,16 +26,7 @@ import { JwtModule } from '@nestjs/jwt';
   ],
   imports: [
     forwardRef(() => UsersModule),
-    JwtModule.registerAsync({
-      useFactory: (configService: ConfigService) => {
-        const appConfig = configService.get('appConfig');
-        return {
-          secret: appConfig.jwt.secret,
-          signOptions: appConfig.jwt.signOptions,
-        };
-      },
-      inject: [ConfigService],
-    }),
+    JwtModule.registerAsync(jwtConfig),
   ],
   exports: [AuthService, HashingProvider],
 })

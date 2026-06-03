@@ -16,6 +16,11 @@ import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import environmentValidationSchema from './config/environment.validation';
 import { DatabaseConnectionBootstrap } from './database/database-connection.bootstrap';
+import { AccessTokenGuard } from './modules/auth/guards/access-token.guard';
+import { APP_GUARD } from '@nestjs/core';
+import { jwtConfig } from './config/jwt.config';
+import { JwtModule } from '@nestjs/jwt';
+import { AuthenticationGuard } from './modules/auth/guards/authentication.guard';
 
 /**
  * Root application module that wires feature modules and infrastructure.
@@ -47,6 +52,7 @@ const ENV_FILE_PATH = ENV ? `.env.${ENV}.local` : '.env';
     TagsModule,
     MetaOptionsModule,
     PaginationModule,
+    JwtModule.registerAsync(jwtConfig),
     // Asynchronously configures TypeORM using environment variables.
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
@@ -54,11 +60,15 @@ const ENV_FILE_PATH = ENV ? `.env.${ENV}.local` : '.env';
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
         host: configService.get<string>('database.host', 'localhost'),
-        port: +(configService.get<string>('database.port', '5432')),
+        port: +configService.get<string>('database.port', '5432'),
         username: configService.get<string>('database.username', 'postgres'),
         password: configService.get<string>('database.password', 'admin123'),
-        database: configService.get<string>('database.database', 'pip_learning_db'),
-        synchronize: configService.get<string>('database.synchronize', 'true') === 'true',
+        database: configService.get<string>(
+          'database.database',
+          'pip_learning_db',
+        ),
+        synchronize:
+          configService.get<string>('database.synchronize', 'true') === 'true',
         autoLoadEntities: true,
         // Keep the HTTP server bootable even when DB is unavailable.
         // DB errors are handled in service methods at request time.
@@ -67,6 +77,14 @@ const ENV_FILE_PATH = ENV ? `.env.${ENV}.local` : '.env';
     }),
   ],
   controllers: [AppController],
-  providers: [AppService, DatabaseConnectionBootstrap],
+  providers: [
+    AppService,
+    DatabaseConnectionBootstrap,
+    {
+      provide: APP_GUARD,
+      useClass: AuthenticationGuard, // Global guard that applies authentication to all routes by default.
+    },
+    AccessTokenGuard, // Register AccessTokenGuard as a provider for dependency injection in AuthenticationGuard and other guards/services that may need it.
+  ],
 })
 export class AppModule {}

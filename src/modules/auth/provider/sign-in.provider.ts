@@ -7,6 +7,7 @@ import { throwIfServiceUnavailable } from '../../../common/exceptions/service-un
 import { FindOneUserByEmailProvider } from '../../users/provider/find-one-user-by-email.provider';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { IActiveUser } from '../interfaces/active-user.interface';
 
 /**
  * Authentication provider handling user sign-in operations.
@@ -62,7 +63,9 @@ export class SignInProvider {
    * });
    * // Returns: { message: 'Sign-in successful', accessToken: '...' }
    */
-  public async signIn(signInDto: SignInDto): Promise<{ message: string; accessToken: string }> {
+  public async signIn(
+    signInDto: SignInDto,
+  ): Promise<{ message: string; accessToken: string }> {
     try {
       // Find the user email id and password in the database using usersService
       // throw exceptions if user not found or password is incorrect
@@ -92,7 +95,7 @@ export class SignInProvider {
 
       const jwtConfig = this.configService.get('appConfig').jwt;
       const accessToken = await this.jwtService.signAsync(
-        { sub: user.id, email: user.email },
+        { sub: user.id, email: user.email } as IActiveUser,
         {
           ...jwtConfig.signOptions,
           secret: jwtConfig.secret,

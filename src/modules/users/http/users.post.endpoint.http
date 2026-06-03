@@ -13,42 +13,42 @@ Content-Type: application/json
 POST http://localhost:8000/v1/users
 Content-Type: application/json
 {
-    "firstName": "Diana",
-    "lastName": "Prince",
-    "email": "diana.prince@example.com",
-    "password": "DianaPass123!"
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "password": "JohnPass123!"
 }
 
 ### Bulk create multiple users in a single atomic transaction
 ### All users are created together, or all are rolled back on any error
-POST http://localhost:8000/v1/users/bulk
+POST http://localhost:8000/v1/users/create-many
 Content-Type: application/json
-
+Authorization: Bearer <JWT_ACCESS_TOKEN>
 {
     "users": [
         {
-            "firstName": "Alice",
-            "lastName": "Smith",
-            "email": "alice.smith@example.com",
-            "password": "AlicePassword123!"
+            "firstName": "Emma",
+            "lastName": "Stone",
+            "email": "emma.stone@example.com",
+            "password": "EmmaPass123!"
         },
         {
-            "firstName": "Bob",
-            "lastName": "Johnson",
-            "email": "bob.johnson@example.com",
-            "password": "BobPassword123!"
+            "firstName": "Liam",
+            "lastName": "Turner",
+            "email": "liam.turner@example.com",
+            "password": "LiamPass123!"
         },
         {
-            "firstName": "Charlie",
-            "lastName": "Brown",
-            "email": "charlie.brown@example.com",
-            "password": "CharliePass123!"
+            "firstName": "Olivia",
+            "lastName": "Bennett",
+            "email": "olivia.bennett@example.com",
+            "password": "OliviaPass123!"
         },
         {
-            "firstName": "Diana",
-            "lastName": "Prince",
-            "email": "diana.prince@example.com",
-            "password": "DianaPass123!"
+            "firstName": "Noah",
+            "lastName": "Walker",
+            "email": "noah.walker@example.com",
+            "password": "NoahPass123!"
         }
     ]
 }

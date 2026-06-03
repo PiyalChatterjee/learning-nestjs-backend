@@ -1,7 +1,7 @@
 ### Create post with full data (Jane Doe, all tags)
 POST http://localhost:8000/v1/posts
 Content-Type: application/json
-
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obi5kb2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3ODA1MTA4NjUsImV4cCI6MTc4MDUxNDQ2NSwiYXVkIjoibG9jYWxob3N0OjgwODAiLCJpc3MiOiJsb2NhbGhvc3Q6ODA4MCJ9.64bUSY1lIHrb_7rjkyhBlhkfpAM1QyWacNFQnJLSzY4
 {
   "title": "Getting started with NestJS",
   "postType": "post",
@@ -18,8 +18,29 @@ Content-Type: application/json
   ],
   "metaOption": {
     "metaValue": "{\"seo\":{\"canonicalUrl\":\"https://example.com/posts/getting-started-with-nestjs\",\"index\":true,\"priority\":0.9},\"social\":{\"ogType\":\"article\",\"twitterCard\":\"summary_large_image\"},\"keywords\":[\"nestjs\",\"typeorm\",\"many-to-many\"],\"readingTimeMinutes\":7,\"isFeatured\":true}"
-  },
-  "authorEmail": "jane.doe@example.com"
+  }
+}
+
+### Create post - authenticated via JWT (no authorEmail needed)
+POST http://localhost:8000/v1/posts
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obi5kb2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3ODA1MTE5OTgsImV4cCI6MTc4MDUxNTU5OCwiYXVkIjoibG9jYWxob3N0OjgwODAiLCJpc3MiOiJsb2NhbGhvc3Q6ODA4MCJ9.lTR59fy62bKUkG-f6DLSLfS7AY9mwZw1yKOvmbhp8DU
+{
+  "title": "NestJS Authentication with JWT",
+  "postType": "post",
+  "slug": "nestjs-authentication-with-jwt",
+  "status": "draft",
+  "content": "A complete guide to implementing JWT authentication in NestJS.",
+  "schema": "article",
+  "featuredImageUrl": "https://example.com/images/jwt-auth-cover.png",
+  "publishOn": "2026-06-10T10:00:00.000Z",
+  "tags": [
+    "https://example.com/tags/nestjs",
+    "https://example.com/tags/rest-api"
+  ],
+  "metaOption": {
+    "metaValue": "{\"seo\":{\"canonicalUrl\":\"https://example.com/posts/nestjs-authentication-with-jwt\",\"index\":true,\"priority\":0.8},\"keywords\":[\"nestjs\",\"jwt\",\"authentication\"]}"
+  }
 }
 
 ### Create post with no tags (John Doe)
@@ -38,8 +59,7 @@ Content-Type: application/json
   "tags": [],
   "metaOption": {
     "metaValue": "{\"seo\":{\"index\":true,\"priority\":0.7},\"keywords\":[\"typeorm\",\"database\",\"nestjs\"]}"
-  },
-  "authorEmail": "john.doe@example.com"
+  }
 }
 
 ### Create minimal post with testing tag (John Doe) - use for PUT/PATCH testing
@@ -57,8 +77,7 @@ Content-Type: application/json
   ],
   "metaOption": {
     "metaValue": "{\"seo\":{\"index\":true,\"priority\":0.5},\"keywords\":[\"testing\",\"nestjs\"]}"
-  },
-  "authorEmail": "john.doe@example.com"
+  }
 }
 
 ### Create temporary post (John Doe) with tags and metaOption - delete after testing
@@ -78,8 +97,7 @@ Content-Type: application/json
   ],
   "metaOption": {
     "metaValue": "{\"seo\":{\"index\":false,\"priority\":0.3},\"keywords\":[\"temporary\",\"delete-test\",\"nestjs\"]}"
-  },
-  "authorEmail": "john.doe@example.com"
+  }
 }
 
 ### Bulk create multiple posts in a single atomic transaction

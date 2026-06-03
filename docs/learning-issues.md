@@ -84,6 +84,32 @@ Capture the following fields every time:
 
 ---
 
+## 2026-06-03 - Guard Returned 500 Instead of 401 for Missing/Invalid Token
+
+### Symptom
+- `POST /v1/users/create-many` without a valid `Authorization` header returned `500 Internal Server Error` instead of `401 Unauthorized`.
+
+### Root Cause
+- `AccessTokenGuard` used `throw throwIfUnauthorized(...)`.
+- `throwIfUnauthorized` is a conditional helper that returns `void` when auth patterns are not matched.
+- Throwing that return value can become `throw undefined`, which is treated as an unhandled error and surfaced as 500.
+
+### Change Made
+- Updated [src/modules/auth/guard/access-token.guard.ts](src/modules/auth/guard/access-token.guard.ts#L1):
+  - Replaced `throw throwIfUnauthorized(...)` usage with direct helper invocation.
+  - Added explicit `UnauthorizedException` fallback after helper calls so guard failures deterministically return 401.
+  - Removed unused `Observable` import.
+
+### Verification
+- TypeScript diagnostics for [src/modules/auth/guard/access-token.guard.ts](src/modules/auth/guard/access-token.guard.ts#L1) show no errors.
+- Endpoint path is confirmed as `POST /v1/users/create-many`; guard now maps missing/invalid token flow to 401 behavior.
+
+### Lesson/Topic Context
+- Helper functions that throw conditionally should be called for side effects, not thrown as return values.
+- In guards, keep explicit fallback exceptions so auth failures cannot degrade into generic 500 responses.
+
+---
+
 ## 2026-06-03 - Sign-In Proxy Provider Wiring for Email Lookup
 
 ### Symptom

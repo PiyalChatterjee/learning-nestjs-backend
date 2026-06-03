@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PostsController } from './posts.controller';
-import { PostsService } from './provider/posts.service';
-import { PostCreateManyProvider } from './provider/post-create-many.provider';
+import { PostsService } from './providers/posts.service';
+import { PostCreateManyProvider } from './providers/post-create-many.provider';
 import { UsersModule } from '../users/users.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Post } from './post.entity';
@@ -10,6 +10,7 @@ import { Tag } from '../tags/tag.entity';
 import { MetaOption } from '../meta-options/meta-option.entity';
 import { TagRelationValidator } from '../../common/validators/tag-relation.validator';
 import { PaginationModule } from '../../common/paginations/pagination.module';
+import { CreatePostProvider } from './providers/create-post.provider';
 
 /**
  * Posts feature module that exposes post endpoints and post service behavior.
@@ -20,6 +21,7 @@ import { PaginationModule } from '../../common/paginations/pagination.module';
     PostsService,
     PostCreateManyProvider,
     TagRelationValidator,
+    CreatePostProvider,
   ],
   imports: [
     UsersModule,

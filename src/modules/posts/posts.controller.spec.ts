@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PostsController } from './posts.controller';
-import { PostsService } from './provider/posts.service';
+import { PostsService } from './providers/posts.service';
 import { UsersService } from '../users/provider/users.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Post } from './post.entity';

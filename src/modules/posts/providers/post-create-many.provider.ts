@@ -10,6 +10,7 @@ import { CreateManyPostsDto } from '../dtos/create-many-posts.dto';
 import { Post } from '../post.entity';
 import { User } from '../../users/user.entity';
 import { MetaOption } from '../../meta-options/meta-option.entity';
+import { IActiveUser } from '../../auth/interfaces/active-user.interface';
 
 /**
  * Handles bulk post creation within a single atomic database transaction.
@@ -44,12 +45,13 @@ export class PostCreateManyProvider {
   ) {}
 
   /**
-   * Creates multiple posts in a single atomic transaction.
-   * All posts are validated and prepared in memory first, including author lookup and tag resolution,
-   * then saved in one bulk operation with their relationships.
-   * If any validation or DB error occurs, the entire transaction is rolled back to prevent partial writes.
+    * Creates multiple posts in a single atomic transaction for the authenticated user.
+    * All posts are validated and prepared in memory first, including author lookup and tag resolution,
+    * then saved in one bulk operation with relationships.
+    * If any validation or DB error occurs, the entire transaction is rolled back.
    *
    * @param createManyPostsDto - Object containing array of DTOs with post creation data.
+    * @param activeUser - Authenticated user claims used as author source for all posts.
    * @returns The array of persisted {@link Post} entities with formatted author details.
    * @throws BadRequestException if batch is empty, exceeds size limit, or contains duplicate slugs.
    * @throws NotFoundException if an author email or tag slug cannot be resolved.
@@ -58,7 +60,10 @@ export class PostCreateManyProvider {
    * @throws ServiceUnavailableException if the database is unreachable.
    * @throws InternalServerErrorException for any other unexpected error.
    */
-  public async createManyPosts(createManyPostsDto: CreateManyPostsDto) {
+  public async createManyPosts(
+    createManyPostsDto: CreateManyPostsDto,
+    activeUser: IActiveUser,
+  ) {
     let newPosts: Post[] = [];
     const queryRunner = this.dataSource.createQueryRunner();
 
@@ -85,18 +90,18 @@ export class PostCreateManyProvider {
         slugsInBatch.add(dto.slug);
       }
 
-      // Prepare all posts with author lookups and tag resolution in memory first
+      // Prepare all posts with a shared authenticated author and tag resolution in memory first.
       for (const dto of createManyPostsDto.posts) {
         // Validate author email format
-        validateEmail(dto.authorEmail);
+        validateEmail(activeUser.email);
 
         // Look up the author by email within the transaction context
         const author = assertResourceExists(
           await queryRunner.manager.findOne(User, {
-            where: { email: dto.authorEmail },
+            where: { email: activeUser.email },
           }),
           'Author',
-          dto.authorEmail,
+          activeUser.email,
         );
 
         // Resolve tags to ensure they exist; errors thrown here are caught below
@@ -105,12 +110,12 @@ export class PostCreateManyProvider {
         );
 
         // Extract nested fields and create post entity in memory
-        const { authorEmail, metaOption, tags = [], ...postData } = dto;
+        const { metaOption, tags = [], ...postData } = dto;
         const newPost = queryRunner.manager.create(Post, {
           ...postData,
           tags: postTags,
-          metaValue: (metaOption as unknown as typeof newPost.metaValue) ??
-            undefined,
+          metaValue:
+            (metaOption as unknown as typeof newPost.metaValue) ?? undefined,
         });
         newPost.author = author;
 

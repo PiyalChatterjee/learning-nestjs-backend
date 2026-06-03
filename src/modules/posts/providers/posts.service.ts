@@ -21,12 +21,8 @@ import { GetPostsDto } from '../dtos/get-posts.dto';
 import { PaginationProvider } from '../../../common/paginations/provider/pagination.provider';
 import { IPaginated } from '../../../common/paginations/interfaces/paginated.interface';
 import { TDeleteResult } from '../../../common/types/delete-result.type';
-
-/**
- * Public-facing post shape returned from all read and write operations.
- * Derived from the {@link formatPostWithAuthor} helper output.
- */
-type TFormattedPost = ReturnType<typeof formatPostWithAuthor>;
+import { IActiveUser } from '../../auth/interfaces/active-user.interface';
+import { CreatePostProvider, TFormattedPost } from './create-post.provider';
 
 /**
  * Manages post data operations.
@@ -52,6 +48,7 @@ export class PostsService {
     private readonly tagRelationValidator: TagRelationValidator,
     private readonly postCreateManyProvider: PostCreateManyProvider,
     private readonly paginationProvider: PaginationProvider,
+    private readonly createPostProvider: CreatePostProvider,
   ) {}
 
   /**
@@ -132,58 +129,11 @@ export class PostsService {
   /**
    * Creates and stores a new post.
    */
-  public async createPost(createPostDto: CreatePostDto): Promise<TFormattedPost> {
-    try {
-      // validate author email format
-      validateEmail(createPostDto.authorEmail);
-
-      // look up the author by email
-      const author = assertResourceExists(
-        await this.userRepository.findOne({
-          where: { email: createPostDto.authorEmail },
-        }),
-        'Author',
-        createPostDto.authorEmail,
-      );
-
-      // extract authorEmail, tags, and metaOption from DTO
-      const { authorEmail, metaOption, tags = [], ...postData } = createPostDto;
-      const postTags = await this.tagRelationValidator.resolveTagsOrThrow(tags);
-
-      // create post with author relation and metaOption relationship
-      const post = this.postRepository.create({
-        ...postData,
-        tags: postTags,
-        metaValue:
-          (metaOption as unknown as typeof post.metaValue) ?? undefined,
-      });
-      post.author = author;
-
-      // persist the post to the database
-      await this.postRepository.save(post);
-
-      // return formatted response with author details
-      return formatPostWithAuthor(post);
-    } catch (error) {
-      throwIfUniqueConstraintViolation(error, {
-        message: `Post with slug ${createPostDto.slug} already exists`,
-      });
-      throwIfServiceUnavailable(error, {
-        message: 'Cannot create post at this moment',
-        serviceName: 'database',
-        shouldLog: true,
-      });
-      throwIfRequestTimeout(error, {
-        message: 'Failed to create post',
-        context: 'database query',
-      });
-      throwIfUnexpectedError(error, {
-        userMessage: 'Failed to create post',
-        context: 'post-creation',
-        originalError: error,
-      });
-      throw error;
-    }
+  public async createPost(
+    createPostDto: CreatePostDto,
+    activeUser: IActiveUser,
+  ): Promise<TFormattedPost> {
+    return this.createPostProvider.createPost(createPostDto, activeUser);
   }
 
   /**
@@ -192,16 +142,24 @@ export class PostsService {
    * author lookup, tag resolution, and transactional persistence.
    * See PostCreateManyProvider for detailed bulk operation semantics.
    */
-  public async createManyPosts(createManyPostsDto: CreateManyPostsDto): Promise<TFormattedPost[]> {
-    const posts =
-      await this.postCreateManyProvider.createManyPosts(createManyPostsDto);
+  public async createManyPosts(
+    createManyPostsDto: CreateManyPostsDto,
+    activeUser: IActiveUser,
+  ): Promise<TFormattedPost[]> {
+    const posts = await this.postCreateManyProvider.createManyPosts(
+      createManyPostsDto,
+      activeUser,
+    );
     return posts.map((post) => formatPostWithAuthor(post));
   }
 
   /**
    * Replaces an existing post with a full payload.
    */
-  public async updatePost(postId: number, updatePostDto: UpdatePostDto): Promise<TFormattedPost> {
+  public async updatePost(
+    postId: number,
+    updatePostDto: UpdatePostDto,
+  ): Promise<TFormattedPost> {
     try {
       // fetch the post or throw 404 if not found
       const post = assertResourceExists(
@@ -255,7 +213,10 @@ export class PostsService {
   /**
    * Updates an existing post using a partial payload.
    */
-  public async patchPost(postId: number, patchPostDto: PatchPostDto): Promise<TFormattedPost> {
+  public async patchPost(
+    postId: number,
+    patchPostDto: PatchPostDto,
+  ): Promise<TFormattedPost> {
     try {
       // fetch the post or throw 404 if not found
       const post = assertResourceExists(

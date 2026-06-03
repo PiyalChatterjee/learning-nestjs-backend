@@ -140,14 +140,4 @@ export class CreatePostDto {
   @Type(() => PostMetaOptionDto)
   metaOption?: PostMetaOptionDto;
 
-  /**
-   * Email of the user authoring this post.
-   */
-  @ApiProperty({
-    description: 'Email address of the post author',
-    example: 'john.doe@example.com',
-  })
-  @IsEmail()
-  @IsNotEmpty()
-  authorEmail: string;
 }
