@@ -2,7 +2,7 @@
 
 **Goal:** Structured NestJS backend learning through hands-on implementation of real-world patterns—users, posts, tags, metadata—with focus on persistence, relationships, validation, and reusable architecture.
 
-**Status:** Week 9 in progress. All core CRUD flows for 4 major entities with many-to-many relationships, validated DTOs, full exception handling layer (8 helpers + bulk-operation helper covering 400/401/403/404/408/409/500/503), database relationships modeled (TypeORM entities), API documentation with Swagger, auth module structure in place, DB outage resilience enabled, **bulk operations with atomic transactions** implemented for high-priority modules (users, posts, tags), **hardened shared pagination applied to all list GET endpoints**, and **JWT configuration consolidated to global app config with environment validation**.
+**Status:** Week 9 in progress. All core CRUD flows for 4 major entities with many-to-many relationships, validated DTOs, full exception handling layer (8 helpers + bulk-operation helper covering 400/401/403/404/408/409/500/503), database relationships modeled (TypeORM entities), API documentation with Swagger, DB outage resilience enabled, **bulk operations with atomic transactions** implemented for high-priority modules (users, posts, tags), **hardened shared pagination applied to all list GET endpoints**, **JWT configuration consolidated to shared config**, and **global route protection enabled via AuthenticationGuard (default Bearer, explicit public opt-out via @Auth(AuthType.None))**.
 
 ## Base Structure
 
@@ -42,6 +42,8 @@
   - `POST /v1/tags/bulk` — Atomic tag creation (max 100 per batch); validates batch size, detects duplicate slugs
   - All bulk endpoints: rollback entire batch on validation error, DB constraint violation, or missing relationship; response documents affected count and error details
 - **Resilient DB Lifecycle:** API process can boot while DB is down, retries connection in background, and returns 503 for DB-dependent endpoints until DB reconnects.
+- **Global Auth Guard:** `AuthenticationGuard` is registered as `APP_GUARD`; routes are protected by default using Bearer JWT unless explicitly marked public with `@Auth(AuthType.None)`.
+- **JWT-Based Author Identity:** Post creation now derives the author from authenticated token claims (`@ActiveUser`) instead of accepting `authorEmail` in create payloads.
 - **Shared Pagination (Hardened):** List endpoints now use common pagination contracts and response shape:
   - `GET /v1/users?page=1&limit=10`
   - `GET /v1/posts?page=1&limit=10`
@@ -73,6 +75,10 @@ DB_PORT=5432
 DB_USERNAME=postgres
 DB_PASSWORD=your_password
 DB_NAME=nestjs_backend
+JWT_SECRET=replace_with_strong_secret
+JWT_ACCESS_TOKEN_TTL=3600
+JWT_TOKEN_AUDIENCE=localhost:8080
+JWT_TOKEN_ISSUER=localhost:8080
 ```
 
 ### Start Development Server
@@ -163,7 +169,7 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 
 ### Users
 - `POST /v1/users` - Create user
-- `POST /v1/users/bulk` - Bulk create users (atomic transaction, max 100 per batch)
+- `POST /v1/users/create-many` - Bulk create users (atomic transaction, max 100 per batch)
 - `GET /v1/users?page=1&limit=10` - List users (paginated)
 - `GET /v1/users/:id` - Get user by ID
 - `PUT /v1/users/:id` - Replace user
@@ -171,8 +177,8 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 - `DELETE /v1/users/:id` - Delete user
 
 ### Posts
-- `POST /v1/posts` - Create post with tags, metadata, author email
-- `POST /v1/posts/bulk` - Bulk create posts (atomic transaction, max 50 per batch; handles tags & authors atomically)
+- `POST /v1/posts` - Create post with tags and metadata (author derived from JWT token)
+- `POST /v1/posts/create-many` - Bulk create posts (atomic transaction, max 50 per batch; handles tags & authenticated author atomically)
 - `GET /v1/posts?page=1&limit=10` - List posts with author & tag details (paginated)
 - `GET /v1/posts/:id` - Get post by ID
 - `PUT /v1/posts/:id` - Full update (replaces tags and metadata)
@@ -181,10 +187,13 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 
 ### Tags
 - `POST /v1/tags` - Create tag
-- `POST /v1/tags/bulk` - Bulk create tags (atomic transaction, max 100 per batch)
+- `POST /v1/tags/create-many` - Bulk create tags (atomic transaction, max 100 per batch)
 - `GET /v1/tags?page=1&limit=10` - List tags (paginated)
 - `GET /v1/tags/:id` - Get tag with associated posts
 - `DELETE /v1/tags/:id` - Soft-delete tag
+
+### Auth
+- `POST /v1/auth/sign-in` - Public sign-in endpoint that returns JWT access token
 
 ### Meta Options
 - `POST /v1/meta-options` - Create metadata entry
@@ -198,13 +207,13 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 | Validation at DTO Layer | Enforces contracts early; cleaner service methods. |
 | Layered Exception Helpers | Each HTTP error type has its own helper; consistent responses across all service methods. |
 | Eager Loading (Tags, Meta) | Reduces N+1 queries in post responses. |
-| Email-Based Author Lookup | Clients reference human identifiers, not internal IDs. |
+| JWT-Based Author Lookup | Write operations derive actor identity from verified token claims instead of trusting request body author identifiers. |
 | Server-Side Error Logging | Internal errors logged with context via NestJS Logger; generic message returned to client. |
 
 ## Next Steps (Post-Week 8)
 
 1. **E2E tests for bulk operations** — test success paths, transaction rollback scenarios, and error responses for users/posts/tags bulk endpoints.
-2. Add auth guards and route protection (at least one JWT-protected endpoint using the new `unauthorized`/`forbidden` helpers).
+2. Add auth-focused tests for global guard defaults and explicit public-route opt-outs.
 3. Write unit tests for new bulk provider patterns and transaction semantics.
 4. Write integration tests for post-tags-metadata workflows with bulk operations.
 5. Extend bulk operations pattern to meta-options module (optional).

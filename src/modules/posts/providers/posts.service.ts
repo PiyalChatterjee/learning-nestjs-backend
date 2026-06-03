@@ -37,6 +37,8 @@ export class PostsService {
    * @param tagRelationValidator Validator for resolving and validating tag relationships.
    * @param postCreateManyProvider Provider for atomic batch post creation operations.
    * @param paginationProvider Provider for consistent pagination across post queries.
+   * @param createPostProvider Provider for single post creation logic, including author resolution and tag handling.
+   *   Extracted to keep PostsService focused on orchestration and delegate complex creation logic.
    */
   constructor(
     @InjectRepository(Post)

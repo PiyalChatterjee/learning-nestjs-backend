@@ -4,11 +4,13 @@
 
 Build a course-aligned backend in small learning increments, with proof of implementation and a clear next-step backlog.
 
-## Current Snapshot (2026-06-01)
+## Current Snapshot (2026-06-04)
 
 - Core app bootstrap is in place with versioned routing and validation.
 - Users module has full controller-level CRUD-style routes with DTO validation and TypeORM repository-backed service methods.
 - Posts module has CRUD endpoints (create, get all, get by id, put, patch, delete) with validated DTOs, enums, repository-backed service methods, formatted author details, and relation-aware tag resolution.
+- Global authentication guard is active via APP_GUARD with default `AuthType.Bearer`; public routes are explicitly marked with `@Auth(AuthType.None)` (for example, `POST /v1/auth/sign-in`).
+- Post creation now resolves author identity from JWT claims (`activeUser.email`) instead of accepting `authorEmail` in create payloads.
 - Tags module now supports create/get/delete flows and is linked to posts through many-to-many mapping with a junction table.
 - Reusable relation validator and exception helpers are now used for cleaner service logic:
 	- tag relation resolution moved to a common validator
@@ -76,7 +78,7 @@ Status: Complete (Learning Scope)
 Status: Complete (Learning Scope)
 
 - Implemented posts endpoints: get all, get by id, create, put, patch by id, delete.
-- Post DTOs and enums implemented (create, update, patch + post type/status/meta options + authorEmail create flow).
+- Post DTOs and enums implemented (create, update, patch + post type/status/meta options), with author derived from authenticated JWT claims.
 - Reusable not-found handling integrated in posts service.
 - Service uses repository pattern with email-based author lookup and author response formatting.
 
@@ -93,7 +95,7 @@ Status: Complete (Learning Scope)
 
 ## Week 5: API Documentation Workflow
 
-Status: Complete (Learning Baseline)
+Status: Complete (2026-06-04)
 
 - Swagger setup complete in bootstrap and endpoint decorators applied.
 - Compodoc installed and script workflow standardized.
@@ -107,10 +109,11 @@ Status: Complete (Learning Baseline)
 
 Status: Complete (Learning Baseline)
 
-- Auth module and service wiring are present.
+- Auth module and service wiring are complete.
 - ForwardRef cross-module wiring between auth and users is implemented.
-- Basic guard structure scaffolded; route protection ready for implementation.
-- JWT/local strategy preparation in place; full production-grade auth guards pending.
+- Global `AuthenticationGuard` is registered through `APP_GUARD`.
+- Default route protection is Bearer JWT, with route-level override via `@Auth(AuthType.None)`.
+- `AccessTokenGuard` populates request user claims for downstream use through `@ActiveUser()`.
 
 ## Week 7: Exception Handling
 
@@ -143,9 +146,9 @@ Status: Complete (2026-06-01)
   - Batch size validation, duplicate slug detection, atomic transaction
 - Reusable `bulk-operation-error.helper.ts` for cascading error handling across all bulk providers
 - New Swagger endpoints:
-  - `POST /users/bulk` — bulk user creation
-  - `POST /posts/bulk` — bulk post creation with tags
-  - `POST /tags/bulk` — bulk tag creation
+	- `POST /users/create-many` — bulk user creation
+	- `POST /posts/create-many` — bulk post creation with tags
+	- `POST /tags/create-many` — bulk tag creation
 - All tests pass (12 test suites, 12 passed); providers mocked in service tests
 - Pattern is documented and ready for reuse in meta-options or future modules
 
@@ -154,18 +157,18 @@ Status: Complete (2026-06-01)
 Status: In Progress
 
 - **JWT global configuration consolidation** — JWT config moved from auth module local scope to global app config with environment validation (2026-06-03).
+- **Global guard rollout completed** — `AuthenticationGuard` is applied via `APP_GUARD` with default Bearer protection and explicit public-route opt-out using `@Auth(AuthType.None)`.
+- **JWT-based post authorship** — create-post flow now uses authenticated user claims instead of request body `authorEmail`.
 - E2E test coverage for bulk create success and partial failure handling (transaction rollback scenarios).
 - Unit test expansion for new bulk operation patterns and transaction rollback scenarios.
-- Auth guards and route protection (at least one JWT-protected endpoint).
 - Filtering and sorting support on list endpoints (pagination complete).
 - Optional: Docker exploration for containerized local development.
 - Optional: Extend bulk operations pattern to meta-options module.
-- Auth guards and route protection (JWT verification on protected endpoints).
 
 ## Immediate Next Priorities
 
 1. **E2E test coverage** for bulk endpoints (users, posts, tags): success cases, batch size limits, duplicate detection, transaction rollback on conflict.
-2. **Auth guards and route protection** — implement JWT verification on at least one protected users/posts endpoint using the `unauthorized` and `forbidden` helpers.
+2. **Auth route audit and tests** — add focused tests to verify default Bearer guard behavior and explicit `@Auth(AuthType.None)` bypass only on intended public endpoints.
 3. **Unit test expansion** for bulk providers: test transaction rollback scenarios, batch validation edge cases.
 4. **Strengthen DB lifecycle further** by replacing `synchronize: true` with proper migration strategy and seeds.
 5. **Integration tests** for `post_tags` write/read behavior, author-post ownership, and metadata nesting in bulk scenarios.
@@ -198,3 +201,4 @@ Status: In Progress
 | 2026-06-01 | Shared pagination rollout | Applied shared pagination to all list GET endpoints (`users`, `posts`, `tags`) using PaginationQueryDto and PaginationProvider with unified paginated response metadata/links | src/common/paginations/dtos/pagination-query.dto.ts, src/common/paginations/provider/pagination.provider.ts, src/modules/users/users.controller.ts, src/modules/users/provider/users.service.ts, src/modules/tags/tags.controller.ts, src/modules/tags/providers/tags.service.ts | 5 | Should nested collections (for example posts inside GET /tags/:id) also be paginated? |
 | 2026-06-01 | Pagination hardening | Strengthened pagination infrastructure with max limit enforcement, deterministic ordering defaults, query-preserving link generation, empty-result-safe pagination metadata, and dedicated provider behavior tests | src/common/paginations/dtos/pagination-query.dto.ts, src/common/paginations/provider/pagination.provider.ts, src/common/paginations/provider/pagination.provider.spec.ts, src/modules/posts/provider/posts.service.ts, src/modules/users/provider/users.service.ts, src/modules/tags/providers/tags.service.ts | 5 | Should high-volume endpoints move from offset pagination to cursor pagination in a later module? |
 | 2026-06-03 | JWT global configuration consolidation | Moved JWT config from auth module local scope to global app config; added JWT environment validation (secret, audience, issuer, TTL); updated SignInProvider to use ConfigService; removed redundant local jwt.config file and directory | src/config/app.config.ts, src/config/environment.validation.ts, src/modules/auth/auth.module.ts, src/modules/auth/provider/sign-in.provider.ts | 5 | Are there other auth-specific configs that should be moved to global scope later? |
+| 2026-06-04 | Global auth guard + JWT identity propagation | Registered `AuthenticationGuard` as APP_GUARD with default Bearer auth, introduced route-level auth metadata (`@Auth` + `AuthType`), added `@ActiveUser` decorator for claims access, and updated post creation flow to derive author from JWT instead of `authorEmail` payload field | src/app.module.ts, src/modules/auth/guards/authentication.guard.ts, src/modules/auth/decorators/auth.decorator.ts, src/modules/auth/decorators/active-user.decorator.ts, src/modules/posts/dtos/create-post.dto.ts, src/modules/posts/providers/create-post.provider.ts | 5 | Should refresh-token flow be added before expanding protected write operations? |
