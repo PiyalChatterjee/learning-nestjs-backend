@@ -2,7 +2,7 @@
 
 **Goal:** Structured NestJS backend learning through hands-on implementation of real-world patterns—users, posts, tags, metadata—with focus on persistence, relationships, validation, and reusable architecture.
 
-**Status:** Week 9 in progress. All core CRUD flows for 4 major entities with many-to-many relationships, validated DTOs, full exception handling layer (8 helpers + bulk-operation helper covering 400/401/403/404/408/409/500/503), database relationships modeled (TypeORM entities), API documentation with Swagger, auth module structure in place, DB outage resilience enabled, **bulk operations with atomic transactions** implemented for high-priority modules (users, posts, tags), and **hardened shared pagination applied to all list GET endpoints**.
+**Status:** Week 9 in progress. All core CRUD flows for 4 major entities with many-to-many relationships, validated DTOs, full exception handling layer (8 helpers + bulk-operation helper covering 400/401/403/404/408/409/500/503), database relationships modeled (TypeORM entities), API documentation with Swagger, auth module structure in place, DB outage resilience enabled, **bulk operations with atomic transactions** implemented for high-priority modules (users, posts, tags), **hardened shared pagination applied to all list GET endpoints**, and **JWT configuration consolidated to global app config with environment validation**.
 
 ## Base Structure
 

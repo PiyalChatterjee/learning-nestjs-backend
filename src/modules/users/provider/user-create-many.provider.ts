@@ -1,9 +1,20 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
-import { validateEmail, validatePasswordStrength } from '../../../common/exceptions/bad-request.helper';
+import {
+  BadRequestException,
+  ConflictException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
+import {
+  validateEmail,
+  validatePasswordStrength,
+} from '../../../common/exceptions/bad-request.helper';
 import { throwIfBulkOperationError } from '../../../common/exceptions/bulk-operation-error.helper';
 import { User } from '../user.entity';
 import { DataSource } from 'typeorm';
 import { CreateManyUsersDto } from '../dtos/create-many-users.dto';
+import { CreateUserProvider } from './create-user.provider';
+import { HashingProvider } from '../../auth/provider/hashing.provider';
 
 /**
  * Handles bulk user creation within a single atomic database transaction.
@@ -19,8 +30,14 @@ export class UserCreateManyProvider {
 
   /**
    * @param dataSource - TypeORM DataSource used to create and manage query runners for transactional operations.
+   * @param hashingProvider - Provider for hashing user passwords before saving to the database.
+   *   Uses forwardRef to handle the circular dependency between UsersModule and AuthModule.
    */
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    @Inject(forwardRef(() => HashingProvider))
+    private readonly hashingProvider: HashingProvider,
+  ) {}
   /**
    * Creates multiple users in a single atomic transaction.
    * All users are validated and prepared in memory first, then saved in one bulk
@@ -81,7 +98,7 @@ export class UserCreateManyProvider {
           firstName: dto.firstName,
           lastName: dto.lastName,
           email: dto.email,
-          password: dto.password,
+          password: await this.hashingProvider.hashPassword(dto.password),
         });
         newUsers.push(newUser);
       }

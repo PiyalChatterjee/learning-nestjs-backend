@@ -3,7 +3,6 @@ import { PostsController } from './posts.controller';
 import { PostsService } from './provider/posts.service';
 import { PostCreateManyProvider } from './provider/post-create-many.provider';
 import { UsersModule } from '../users/users.module';
-import { AuthService } from '../auth/provider/auth.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Post } from './post.entity';
 import { User } from '../users/user.entity';
@@ -20,7 +19,6 @@ import { PaginationModule } from '../../common/paginations/pagination.module';
   providers: [
     PostsService,
     PostCreateManyProvider,
-    AuthService,
     TagRelationValidator,
   ],
   imports: [

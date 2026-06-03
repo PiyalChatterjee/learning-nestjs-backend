@@ -84,6 +84,171 @@ Capture the following fields every time:
 
 ---
 
+## 2026-06-03 - Sign-In Proxy Provider Wiring for Email Lookup
+
+### Symptom
+- Sign-in flow previously failed during user lookup (`findOneByEmail`) and later returned inconsistent behavior.
+
+### Root Cause
+- Sign-in path depended on `UsersService` for email lookup in a circular module graph, creating unstable dependency resolution for the lookup path.
+
+### Change Made
+- Refactored sign-in to use the proxy provider directly:
+  - `SignInProvider` now injects `FindOneUserByEmailProvider` and calls `findOneByEmail(...)` directly.
+- Updated module exports:
+  - `UsersModule` now exports `FindOneUserByEmailProvider` so `AuthModule` can consume it.
+- Kept `UsersService.findOneByEmail` aligned to proxy usage (delegates to `FindOneUserByEmailProvider`) to preserve architecture consistency.
+
+### Verification
+- `POST /v1/auth/sign-in` with valid credentials returned:
+  - `201`
+  - `{"message":"Sign-in successful"}`
+
+### Lesson/Topic Context
+- When a dedicated provider encapsulates a lookup concern, inject that provider directly in auth flows rather than routing through a larger service with circular dependencies.
+
+---
+
+## 2026-06-03 - Undefined Provider During Sign-In Email Lookup
+
+### Symptom
+- Sign-in flow failed with:
+  - `Failed to fetch user [user-find-by-email]: Cannot read properties of undefined (reading 'findOneByEmail')`
+
+### Root Cause
+- `UsersService` was calling `findOneUserByEmailProvider.findOneByEmail(...)`, but in the circular `AuthModule` <-> `UsersModule` graph this dependency could resolve as undefined when not explicitly injected with a deferred reference.
+
+### Change Made
+- Updated `src/modules/users/provider/users.service.ts`:
+  - Added explicit `@Inject(forwardRef(() => FindOneUserByEmailProvider))` on the `findOneUserByEmailProvider` constructor dependency.
+
+### Verification
+- TypeScript diagnostics for `users.service.ts`: no errors.
+- Runtime sign-in API should now resolve `findOneUserByEmailProvider` correctly after restart/reload.
+
+### Lesson/Topic Context
+- In circular module graphs, make constructor injection explicit on cross-feature or lazily-resolved dependencies to avoid runtime `undefined` references.
+
+---
+
+## 2026-06-03 - UnknownDependenciesException From Cross-Module Service Registration
+
+### Symptom
+- App bootstrap failed with:
+  - `Nest can't resolve dependencies of the AuthService (UsersService, ?)`
+  - Missing `SignInProvider` in `PostsModule` context.
+
+### Root Cause
+- `AuthService` was mistakenly added to `providers` in `PostsModule`.
+- That forced Nest to instantiate `AuthService` inside `PostsModule`, but `SignInProvider` is registered in `AuthModule`, not `PostsModule`.
+
+### Change Made
+- Updated `src/modules/posts/posts.module.ts`:
+  - Removed `AuthService` import.
+  - Removed `AuthService` from `providers`.
+
+### Verification
+- TypeScript diagnostics for `posts.module.ts`: no errors.
+
+### Lesson/Topic Context
+- Do not re-provide a service from another feature module.
+- If a service is needed across modules, provide and export it from its owning module, then import that module where needed.
+
+---
+
+## 2026-06-03 - InvalidClassModuleException From Provider in imports
+
+### Symptom
+- App failed during bootstrap with `InvalidClassModuleException`:
+  - Classes with `@Injectable()` must not be in a module `imports` array.
+  - Specifically flagged `FindOneUserByEmailProvider`.
+
+### Root Cause
+- `FindOneUserByEmailProvider` (a provider class) was mistakenly added to `imports` in `UsersModule` instead of `providers`.
+
+### Change Made
+- Updated `src/modules/users/users.module.ts`:
+  - Added `FindOneUserByEmailProvider` to `providers`.
+  - Removed `FindOneUserByEmailProvider` from `imports`.
+
+### Verification
+- TypeScript diagnostics for `users.module.ts`: no errors.
+- Module metadata now follows Nest rules (`imports` contains modules only, `providers` contains injectable classes).
+
+### Lesson/Topic Context
+- Nest module arrays have strict roles:
+  - `imports`: modules only
+  - `providers`: services/providers/injectables
+  - `controllers`: controllers only
+
+---
+
+## 2026-06-03 - Nest Test Failed to Resolve Repository Dependency
+
+### Symptom
+- `FindOneUserByEmailProvider` spec failed with: Nest can't resolve dependencies of `FindOneUserByEmailProvider` (`UserRepository` at index [0]).
+
+### Root Cause
+- The generated spec bootstrapped a Nest testing module with only the provider class and did not provide its `Repository<User>` dependency.
+
+### Change Made
+- Updated `src/modules/users/provider/find-one-user-by-email.provider.spec.ts` to instantiate the provider directly with a mocked repository (`findOne: jest.fn()`), removing reliance on unresolved DI tokens for this unit test.
+
+### Verification
+- TypeScript diagnostics for the spec file report no errors.
+
+### Lesson/Topic Context
+- For focused unit tests, directly constructing providers with mocked dependencies is often simpler and more stable than building a full Nest testing module.
+
+---
+
+## 2026-06-03 - Auth Email Lookup Missing Exception Translation
+
+### Symptom
+- `find-one-user-by-email.provider.ts` had a TODO in the `catch` block and did not translate DB errors into standardized HTTP exceptions.
+
+### Root Cause
+- The provider was generated and wired for repository access, but the exception helper chain used across service/provider layers was not added yet.
+
+### Change Made
+- Updated `src/modules/auth/provider/find-one-user-by-email.provider.ts`:
+  - Added imports for `throwIfServiceUnavailable`, `throwIfRequestTimeout`, and `throwIfUnexpectedError`.
+  - Implemented catch-block cascade in standard order: service unavailable -> request timeout -> unexpected error.
+  - Added final `throw error` to preserve known HTTP exceptions and satisfy explicit control flow.
+
+### Verification
+- TypeScript diagnostics for `find-one-user-by-email.provider.ts`: no errors.
+
+### Lesson/Topic Context
+- Keep provider-level error handling consistent with the shared exception-helper pattern to avoid leaking low-level DB/network errors and to return stable API responses.
+
+---
+
+## 2026-06-03 - Password Not Being Hashed on User Creation
+
+### Symptom
+- `POST /v1/users` returned the plain text password in the response instead of a bcrypt hash
+- Password was stored as plain text in the database
+
+### Root Cause
+Two combined issues:
+1. `HashingProvider` was registered in `AuthModule` but not added to `exports`, so `UsersModule` (which imports `AuthModule`) could not resolve it for injection into `CreateUserProvider`
+2. The `forwardRef()` wrapper on `@Inject(HashingProvider)` was removed from `CreateUserProvider`, thinking it was unnecessary — but since `UsersModule` ↔ `AuthModule` form a **circular dependency**, `forwardRef` is required at the injection site. Without it, NestJS resolves the dependency synchronously before the circular dep is settled, leaving the injected instance as an unresolved proxy whose `hashPassword` method silently returns the original value instead of a hash
+
+### Change Made
+- `auth.module.ts`: Added `HashingProvider` to the `exports` array
+- `create-user.provider.ts`: Restored `@Inject(forwardRef(() => HashingProvider))` on the `hashingProvider` constructor parameter
+
+### Verification
+- `POST /v1/users` with a new user returned `password: $2b$10$...` — a valid bcrypt hash
+- Confirmed with user Jim Clark (id: 11)
+
+### Lesson/Topic Context
+- In circular module pairs (`forwardRef(() => ModuleA)` in imports), providers that **cross the circular boundary** must also use `forwardRef` at the `@Inject` level — not just at the module `imports` level
+- Missing `exports` for a provider in a module = silent injection failure at runtime, not a startup error when `forwardRef` defers resolution
+
+---
+
 ## 2026-06-01 - Pagination Hardening Gaps in Production Readiness
 
 ### Symptom

@@ -27,6 +27,9 @@ import { PaginationQueryDto } from '../../../common/paginations/dtos/pagination-
 import { PaginationProvider } from '../../../common/paginations/provider/pagination.provider';
 import { IPaginated } from '../../../common/paginations/interfaces/paginated.interface';
 import { TDeleteResult } from '../../../common/types/delete-result.type';
+import { HashingProvider } from '../../auth/provider/hashing.provider';
+import { CreateUserProvider } from './create-user.provider';
+import { FindOneUserByEmailProvider } from './find-one-user-by-email.provider';
 
 /**
  * Internal representation of persisted user data.
@@ -71,6 +74,7 @@ export class UsersService {
    * @param profileConfiguration Configuration values for user profile settings.
    * @param userCreateManyProvider Provider for atomic batch user creation operations.
    * @param paginationProvider Provider for consistent pagination across user queries.
+   * @param createUserProvider Provider for encapsulated user creation logic, including validation and hashing.
    */
   constructor(
     @Inject(forwardRef(() => AuthService))
@@ -83,6 +87,9 @@ export class UsersService {
 
     private readonly userCreateManyProvider: UserCreateManyProvider,
     private readonly paginationProvider: PaginationProvider,
+
+    private readonly createUserProvider: CreateUserProvider,
+    private readonly findOneUserByEmailProvider: FindOneUserByEmailProvider,
   ) {}
   // Service methods will go here, utilizing authService for authentication checks and userRepository for database operations.
 
@@ -90,50 +97,7 @@ export class UsersService {
    * Creates a new user record.
    */
   public async createUser(createUserDto: CreateUserDto): Promise<User> {
-    try {
-      // validate email format
-      validateEmail(createUserDto.email);
-
-      // validate password strength
-      validatePasswordStrength(createUserDto.password);
-
-      // check if email already exists
-      const existingUser = await this.userRepository.findOne({
-        where: { email: createUserDto.email },
-      });
-      if (existingUser) {
-        throw new ConflictException('Email already in use');
-      }
-
-      // configure the user entity
-      const { firstName, lastName, email, password } = createUserDto;
-      const user = this.userRepository.create({
-        firstName,
-        lastName,
-        email,
-        password,
-      });
-
-      // save the user to the database
-      await this.userRepository.save(user);
-      return user;
-    } catch (error) {
-      throwIfServiceUnavailable(error, {
-        message: 'Cannot create user at this moment',
-        serviceName: 'database',
-        shouldLog: true,
-      });
-      throwIfRequestTimeout(error, {
-        message: 'Failed to create user',
-        context: 'database query',
-      });
-      throwIfUnexpectedError(error, {
-        userMessage: 'Failed to create user',
-        context: 'user-creation',
-        originalError: error,
-      });
-      throw error;
-    }
+    return this.createUserProvider.createUser(createUserDto);
   }
 
   /**
@@ -142,14 +106,20 @@ export class UsersService {
    * duplicate email detection, and transactional persistence.
    * See UserCreateManyProvider for detailed bulk operation semantics.
    */
-  public async createManyUsers(createManyUsersDto: CreateManyUsersDto): Promise<User[]> {
-    return await this.userCreateManyProvider.createManyUsers(createManyUsersDto);
+  public async createManyUsers(
+    createManyUsersDto: CreateManyUsersDto,
+  ): Promise<User[]> {
+    return await this.userCreateManyProvider.createManyUsers(
+      createManyUsersDto,
+    );
   }
 
   /**
    * Returns a paginated list of users.
    */
-  public async getAllUsers(paginationQuery: PaginationQueryDto): Promise<IPaginated<TUserSummary>> {
+  public async getAllUsers(
+    paginationQuery: PaginationQueryDto,
+  ): Promise<IPaginated<TUserSummary>> {
     try {
       // verify the caller is authenticated
       const isAuthenticated = this.authService.isAuthenticated('SAMPLE_TOKEN');
@@ -243,7 +213,10 @@ export class UsersService {
   /**
    * Replaces a user record with full update values.
    */
-  public async updateUser(id: number, updateUserDto: UpdateUserDto): Promise<TUserSummary> {
+  public async updateUser(
+    id: number,
+    updateUserDto: UpdateUserDto,
+  ): Promise<TUserSummary> {
     try {
       // validate email format if provided
       validateEmail(updateUserDto.email);
@@ -300,7 +273,10 @@ export class UsersService {
   /**
    * Updates selected fields on a user record.
    */
-  public async patchUser(id: number, patchUserDto: PatchUserDto): Promise<TUserSummary> {
+  public async patchUser(
+    id: number,
+    patchUserDto: PatchUserDto,
+  ): Promise<TUserSummary> {
     try {
       // validate email format if provided
       if (patchUserDto.email) {
@@ -387,6 +363,28 @@ export class UsersService {
       throwIfUnexpectedError(error, {
         userMessage: 'Failed to delete user',
         context: 'user-delete',
+        originalError: error,
+      });
+      throw error;
+    }
+  }
+
+  public async findOneByEmail(email: string): Promise<User | null> {
+    try {
+      return await this.findOneUserByEmailProvider.findOneByEmail(email);
+    } catch (error) {
+      throwIfServiceUnavailable(error, {
+        message: 'Cannot fetch user at this moment',
+        serviceName: 'database',
+        shouldLog: true,
+      });
+      throwIfRequestTimeout(error, {
+        message: 'Failed to fetch user',
+        context: 'database query',
+      });
+      throwIfUnexpectedError(error, {
+        userMessage: 'Failed to fetch user',
+        context: 'user-find-by-email',
         originalError: error,
       });
       throw error;

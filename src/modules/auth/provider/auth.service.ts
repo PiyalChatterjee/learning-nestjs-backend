@@ -1,7 +1,13 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { UsersService } from '../../users/provider/users.service';
-import { assertTokenExists, assertUserAuthenticated, throwIfUnauthorized } from '../../../common/exceptions/unauthorized.helper';
+import {
+  assertTokenExists,
+  assertUserAuthenticated,
+  throwIfUnauthorized,
+} from '../../../common/exceptions/unauthorized.helper';
 import { throwIfUnexpectedError } from '../../../common/exceptions/internal-error.helper';
+import { SignInDto } from '../dtos/signin.dto';
+import { SignInProvider } from './sign-in.provider';
 
 /**
  * Handles authentication and token validation workflow.
@@ -15,30 +21,25 @@ export class AuthService {
   constructor(
     @Inject(forwardRef(() => UsersService))
     private readonly usersService: UsersService,
+
+    private readonly siginInProvider: SignInProvider,
   ) {}
 
   /**
    * Validates credentials and returns an access token placeholder.
    */
-  public login(email: string, password: string, id: number): string | undefined {
-    try {
-      // Validate inputs are not empty
-      if (!email || !password) {
-        throw new Error('Email and password are required');
-      }
+  public async signIn(signInDto: SignInDto) {
+    // Find the user email id and password in the database using usersService
+    // throw exceptions if user not found or password is incorrect
+    // compare password to the hashed password stored in the database using the hashing provider
+    //  send confirmation
 
-      const user = this.usersService.getUserById(id);
-      // Implement your user validation logic here, such as checking the username and password against a database.
-      return 'SAMPLE_TOKEN';
+    try {
+      return await this.siginInProvider.signIn(signInDto);
     } catch (error) {
       throwIfUnauthorized(error, {
-        message: 'Invalid credentials provided',
-        context: 'login',
-      });
-      throwIfUnexpectedError(error, {
-        userMessage: 'Authentication failed',
-        context: 'auth-login',
-        originalError: error,
+        message: 'Invalid email or password',
+        context: 'sign-in',
       });
     }
   }

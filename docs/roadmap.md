@@ -149,10 +149,11 @@ Status: Complete (2026-06-01)
 - All tests pass (12 test suites, 12 passed); providers mocked in service tests
 - Pattern is documented and ready for reuse in meta-options or future modules
 
-## Week 9: Quality + Querying + Optional Docker Exploration
+## Week 9: Quality + Auth Configuration + Querying + Optional Docker Exploration
 
 Status: In Progress
 
+- **JWT global configuration consolidation** — JWT config moved from auth module local scope to global app config with environment validation (2026-06-03).
 - E2E test coverage for bulk create success and partial failure handling (transaction rollback scenarios).
 - Unit test expansion for new bulk operation patterns and transaction rollback scenarios.
 - Auth guards and route protection (at least one JWT-protected endpoint).
@@ -196,3 +197,4 @@ Status: In Progress
 | 2026-06-01 | Bulk operations expansion (posts & tags) | Extended bulk operations pattern to posts (with tag resolution) and tags modules; all high-priority modules now have atomic bulk create endpoints with full validation and transaction support | src/modules/posts/provider/post-create-many.provider.ts, src/modules/posts/dtos/create-many-posts.dto.ts, src/modules/posts/posts.controller.ts, src/modules/tags/providers/tag-create-many.provider.ts, src/modules/tags/dtos/create-many-tags.dto.ts, src/modules/tags/tags.controller.ts, docs/roadmap.md | 5 | E2E tests for bulk endpoints? Meta-options bulk operations? |
 | 2026-06-01 | Shared pagination rollout | Applied shared pagination to all list GET endpoints (`users`, `posts`, `tags`) using PaginationQueryDto and PaginationProvider with unified paginated response metadata/links | src/common/paginations/dtos/pagination-query.dto.ts, src/common/paginations/provider/pagination.provider.ts, src/modules/users/users.controller.ts, src/modules/users/provider/users.service.ts, src/modules/tags/tags.controller.ts, src/modules/tags/providers/tags.service.ts | 5 | Should nested collections (for example posts inside GET /tags/:id) also be paginated? |
 | 2026-06-01 | Pagination hardening | Strengthened pagination infrastructure with max limit enforcement, deterministic ordering defaults, query-preserving link generation, empty-result-safe pagination metadata, and dedicated provider behavior tests | src/common/paginations/dtos/pagination-query.dto.ts, src/common/paginations/provider/pagination.provider.ts, src/common/paginations/provider/pagination.provider.spec.ts, src/modules/posts/provider/posts.service.ts, src/modules/users/provider/users.service.ts, src/modules/tags/providers/tags.service.ts | 5 | Should high-volume endpoints move from offset pagination to cursor pagination in a later module? |
+| 2026-06-03 | JWT global configuration consolidation | Moved JWT config from auth module local scope to global app config; added JWT environment validation (secret, audience, issuer, TTL); updated SignInProvider to use ConfigService; removed redundant local jwt.config file and directory | src/config/app.config.ts, src/config/environment.validation.ts, src/modules/auth/auth.module.ts, src/modules/auth/provider/sign-in.provider.ts | 5 | Are there other auth-specific configs that should be moved to global scope later? |
