@@ -4,7 +4,7 @@
 
 Build a course-aligned backend in small learning increments, with proof of implementation and a clear next-step backlog.
 
-## Current Snapshot (2026-06-04)
+## Current Snapshot (2026-06-05)
 
 - Core app bootstrap is in place with versioned routing and validation.
 - Users module has full controller-level CRUD-style routes with DTO validation and TypeORM repository-backed service methods.
@@ -12,6 +12,8 @@ Build a course-aligned backend in small learning increments, with proof of imple
 - Global authentication guard is active via APP_GUARD with default `AuthType.Bearer`; public routes are explicitly marked with `@Auth(AuthType.None)` (for example, `POST /v1/auth/sign-in`).
 - Post creation now resolves author identity from JWT claims (`activeUser.email`) instead of accepting `authorEmail` in create payloads.
 - Tags module now supports create/get/delete flows and is linked to posts through many-to-many mapping with a junction table.
+- **Google OAuth API wrapper implemented**: `GoogleAuthenticationService` wraps Google Auth Library OAuth2Client; supports ID token verification, user lookup by `googleId`, and JWT token generation; config credentials stored in `appConfig.jwt.googleOAuth` namespace; `POST /v1/auth/google-authentication` endpoint added with 401 response when user not found.
+- **Config fixes applied**: Fixed TypeORM `synchronize` flag parsing (boolean vs string comparison) to allow auto-schema updates in development.
 - Reusable relation validator and exception helpers are now used for cleaner service logic:
 	- tag relation resolution moved to a common validator
 	- DB unique constraint translation moved to a common exception helper
@@ -202,3 +204,4 @@ Status: In Progress
 | 2026-06-01 | Pagination hardening | Strengthened pagination infrastructure with max limit enforcement, deterministic ordering defaults, query-preserving link generation, empty-result-safe pagination metadata, and dedicated provider behavior tests | src/common/paginations/dtos/pagination-query.dto.ts, src/common/paginations/provider/pagination.provider.ts, src/common/paginations/provider/pagination.provider.spec.ts, src/modules/posts/provider/posts.service.ts, src/modules/users/provider/users.service.ts, src/modules/tags/providers/tags.service.ts | 5 | Should high-volume endpoints move from offset pagination to cursor pagination in a later module? |
 | 2026-06-03 | JWT global configuration consolidation | Moved JWT config from auth module local scope to global app config; added JWT environment validation (secret, audience, issuer, TTL); updated SignInProvider to use ConfigService; removed redundant local jwt.config file and directory | src/config/app.config.ts, src/config/environment.validation.ts, src/modules/auth/auth.module.ts, src/modules/auth/provider/sign-in.provider.ts | 5 | Are there other auth-specific configs that should be moved to global scope later? |
 | 2026-06-04 | Global auth guard + JWT identity propagation | Registered `AuthenticationGuard` as APP_GUARD with default Bearer auth, introduced route-level auth metadata (`@Auth` + `AuthType`), added `@ActiveUser` decorator for claims access, and updated post creation flow to derive author from JWT instead of `authorEmail` payload field | src/app.module.ts, src/modules/auth/guards/authentication.guard.ts, src/modules/auth/decorators/auth.decorator.ts, src/modules/auth/decorators/active-user.decorator.ts, src/modules/posts/dtos/create-post.dto.ts, src/modules/posts/providers/create-post.provider.ts | 5 | Should refresh-token flow be added before expanding protected write operations? |
+| 2026-06-05 | Google OAuth API wrapper + config fixes | Implemented GoogleAuthenticationService as API wrapper for Google Auth Library with ID token verification, user lookup by googleId, and JWT token generation; added google-authentication endpoint at /v1/auth/google-authentication; fixed TypeORM synchronize config parsing; added explicit error handling for null-user and missing token payloads | src/modules/auth/social/providers/google-authentication.service.ts, src/modules/auth/social/google-authentication.controller.ts, src/modules/users/providers/find-one-by-google-id.provider.ts, src/modules/users/providers/users.service.ts, src/app.module.ts, src/config/app.config.ts, docs/learning-issues.md | 4 | Should auto-provision (create user on first Google login) be added? Should refresh-token be generated alongside access token in Google flow? |
