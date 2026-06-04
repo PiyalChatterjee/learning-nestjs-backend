@@ -1,4 +1,10 @@
-import { Check, Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Check,
+  Column,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Post } from '../posts/post.entity';
 
 /**
@@ -62,8 +68,20 @@ export class User {
     type: 'varchar',
     length: 64,
     name: 'password',
+    nullable: true,
   })
-  password: string;
+  password?: string;
+  
+  /**   * Optional Google ID for users authenticated via Google OAuth.
+   * This field is nullable to allow for users who sign up with email/password.
+   */
+  @Column({
+    type: 'varchar',
+    length: 255,
+    name: 'google_id',
+    nullable: true,
+  })
+  googleId?: string;
 
   @OneToMany(() => Post, (post) => post.author)
   posts: Post[];

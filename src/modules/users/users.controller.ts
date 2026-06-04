@@ -14,7 +14,7 @@ import {
 import { CreateUserDto } from './dtos/create-user.dto';
 import { PatchUserDto } from './dtos/patch-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
-import { UsersService } from './provider/users.service';
+import { UsersService } from './providers/users.service';
 import { ApiQuery, ApiTags, ApiBody, ApiParam, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CreateManyUsersDto } from './dtos/create-many-users.dto';
 import { PaginationQueryDto } from '../../common/paginations/dtos/pagination-query.dto';

@@ -1,12 +1,16 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
-import { AuthService } from './provider/auth.service';
+import { AuthService } from './providers/auth.service';
 import { UsersModule } from '../users/users.module';
-import { HashingProvider } from './provider/hashing.provider';
-import { BcryptProvider } from './provider/bcrypt.provider';
-import { SignInProvider } from './provider/sign-in.provider';
+import { HashingProvider } from './providers/hashing.provider';
+import { BcryptProvider } from './providers/bcrypt.provider';
+import { SignInProvider } from './providers/sign-in.provider';
 import { JwtModule } from '@nestjs/jwt';
 import { jwtConfig } from '../../config/jwt.config';
+import { GenerateTokensProvider } from './providers/generate-tokens.provider';
+import { RefreshTokensProvider } from './providers/refresh-tokens.provider';
+import { GoogleAuthenticationController } from './social/google-authentication.controller';
+import { GoogleAuthenticationService } from './social/providers/google-authentication.service';
 
 /**
  * Authentication module providing auth services and controllers.
@@ -15,7 +19,7 @@ import { jwtConfig } from '../../config/jwt.config';
  * JWT configuration is sourced from global appConfig.
  */
 @Module({
-  controllers: [AuthController],
+  controllers: [AuthController, GoogleAuthenticationController],
   providers: [
     AuthService,
     {
@@ -23,11 +27,11 @@ import { jwtConfig } from '../../config/jwt.config';
       useClass: BcryptProvider,
     },
     SignInProvider,
+    GenerateTokensProvider,
+    RefreshTokensProvider,
+    GoogleAuthenticationService,
   ],
-  imports: [
-    forwardRef(() => UsersModule),
-    JwtModule.registerAsync(jwtConfig),
-  ],
+  imports: [forwardRef(() => UsersModule), JwtModule.registerAsync(jwtConfig)],
   exports: [AuthService, HashingProvider],
 })
 export class AuthModule {}

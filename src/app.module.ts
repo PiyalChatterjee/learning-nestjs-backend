@@ -67,8 +67,7 @@ const ENV_FILE_PATH = ENV ? `.env.${ENV}.local` : '.env';
           'database.database',
           'pip_learning_db',
         ),
-        synchronize:
-          configService.get<string>('database.synchronize', 'true') === 'true',
+        synchronize: configService.get<boolean>('database.synchronize', true),
         autoLoadEntities: true,
         // Keep the HTTP server bootable even when DB is unavailable.
         // DB errors are handled in service methods at request time.

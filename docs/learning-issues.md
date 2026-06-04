@@ -84,6 +84,82 @@ Capture the following fields every time:
 
 ---
 
+## 2026-06-04 - Sign-In Returned 200 With Empty Body
+
+### Symptom
+- `POST /v1/auth/sign-in` returned `HTTP/1.1 200 OK` with `content-length: 0` and no JSON body, so no access token appeared in the response.
+
+### Root Cause
+- In `AuthService.signIn`, the `catch` block only called `throwIfUnauthorized(...)`.
+- For non-auth errors (for example token generation/config/runtime errors), that helper does not always throw, which allowed the method to exit without returning a value.
+- Nest serialized `undefined` as an empty `200` response body.
+
+### Change Made
+- Updated `src/modules/auth/providers/auth.service.ts`:
+  - Added `throwIfRequestTimeout(...)` and `throwIfServiceUnavailable(...)` handling.
+  - Kept `throwIfUnauthorized(...)` for credential failures.
+  - Added `throwIfUnexpectedError(...)` and final `throw error` fallback to avoid swallowing errors and returning `undefined`.
+
+### Verification
+- Code path now guarantees: either a valid `{ message, accessToken }` response is returned, or an exception is thrown.
+- TypeScript diagnostics were checked on modified files after the change.
+
+### Lesson/Topic Context
+- In NestJS service `catch` blocks, always rethrow or translate all error paths.
+- Swallowed exceptions can silently become successful HTTP responses with empty bodies.
+
+---
+
+## 2026-06-04 - AuthService Spec Failed on Missing Provider Mock
+
+### Symptom
+- Running `auth.service.spec.ts` failed with Nest DI error: `Nest can't resolve dependencies of the AuthService (UsersService, ?)` for `SignInProvider`.
+
+### Root Cause
+- `AuthService` constructor requires `SignInProvider`, but the unit test module only mocked `UsersService`.
+
+### Change Made
+- Updated `src/modules/auth/providers/auth.service.spec.ts`:
+  - Added `SignInProvider` import.
+  - Added a mock provider with `signIn: jest.fn()` in the testing module.
+
+### Verification
+- `auth.service.spec.ts` now compiles and resolves dependencies correctly in test module setup.
+
+### Lesson/Topic Context
+- When service constructor dependencies change, update unit test provider mocks immediately to keep tests aligned with DI contracts.
+
+---
+
+## 2026-06-04 - JWT expiresIn Error During Sign-In Token Generation
+
+### Symptom
+- Sign-in failed with:
+  - `Failed to complete sign-in [auth-service-sign-in]: "expiresIn" should be a number of seconds or string representing a timespan`
+
+### Root Cause
+- `GenerateTokensProvider` read config from `jwt.*` paths, but the project registers JWT values under `appConfig.jwt.*`.
+- As a result, token TTL and related JWT options resolved as `undefined` during signing.
+
+### Change Made
+- Updated `src/modules/auth/providers/generate-tokens.provider.ts`:
+  - Changed config reads to namespaced keys:
+    - `appConfig.jwt.secret`
+    - `appConfig.jwt.signOptions.audience`
+    - `appConfig.jwt.signOptions.issuer`
+    - `appConfig.jwt.signOptions.expiresIn`
+    - `appConfig.jwt.refreshTokenTtl`
+
+### Verification
+- TypeScript diagnostics for the updated provider show no errors.
+- Auth service unit spec remains passing after the change.
+
+### Lesson/Topic Context
+- When using `registerAs('namespace', ...)`, all `ConfigService` lookups must include the namespace path.
+- Missing namespace can surface as downstream runtime errors that look unrelated to config keys.
+
+---
+
 ## 2026-06-03 - Guard Returned 500 Instead of 401 for Missing/Invalid Token
 
 ### Symptom
@@ -1222,3 +1298,74 @@ findAll(@Query('page') page: number = 1) {
 ### Lesson/Topic Context
 - Every repository injected with `@InjectRepository(Entity)` must have its entity listed in the same module's `TypeOrmModule.forFeature([...])`.
 - This DI registration change does not alter entity relationship direction; it only provides repository tokens to Nest.
+
+## 2026-06-05 - Google OAuth client undefined during token verification
+
+### Symptom
+- `POST /v1/auth/google-authentication` failed with:
+  - `TypeError: Cannot read properties of undefined (reading 'verifyIdToken')`
+  - Stack pointed to `GoogleAuthenticationService.authenticate(...)`.
+
+### Root Cause
+- `oauth2Client` initialization depended on module lifecycle timing (`onModuleInit`) and was undefined at runtime when `authenticate` executed.
+
+### Change Made
+- Updated [src/modules/auth/social/providers/google-authentication.service.ts](src/modules/auth/social/providers/google-authentication.service.ts):
+  - Moved `OAuth2Client` creation into the constructor using `appConfig.jwt.googleOAuth.clientId` and `appConfig.jwt.googleOAuth.clientSecret`.
+  - Removed `OnModuleInit` usage from this service.
+  - Added a defensive runtime guard in `authenticate()` to recreate the client if it is unexpectedly missing.
+
+### Verification
+- The service no longer calls `verifyIdToken` on an undefined client instance because client creation is now deterministic at provider construction time.
+
+### Lesson/Topic Context
+- For critical SDK clients used on request paths, prefer constructor initialization over lifecycle-only setup unless lifecycle ordering is required.
+- Add defensive guards for externally configured clients to avoid undefined dereferences under edge conditions.
+
+## 2026-06-05 - TypeORM synchronize did not apply schema updates despite DB_SYNC true
+
+### Symptom
+- Entity changes (for example `User.googleId` -> `google_id`) were not reflected in PostgreSQL even though database sync was expected to be enabled in development.
+
+### Root Cause
+- In [src/app.module.ts](src/app.module.ts), TypeORM config read `database.synchronize` as a string and compared it to `'true'`:
+  - `configService.get<string>('database.synchronize', 'true') === 'true'`
+- But `database.synchronize` is produced as a boolean in [src/config/database.config.ts](src/config/database.config.ts), so the comparison evaluated to false.
+- Result: `synchronize` was effectively off at runtime.
+
+### Change Made
+- Updated [src/app.module.ts](src/app.module.ts) to read the value as boolean directly:
+  - `synchronize: configService.get<boolean>('database.synchronize', true)`
+
+### Verification
+- Build succeeds after change (`npm run build`).
+- Runtime now receives the intended boolean synchronize flag from config.
+
+### Lesson/Topic Context
+- Keep config value types consistent end-to-end (producer and consumer).
+- Avoid boolean-via-string comparisons when using typed config providers.
+
+## 2026-06-05 - Google auth passed null user into token generator
+
+### Symptom
+- Google sign-in failed with:
+  - `TypeError: Cannot read properties of null (reading 'id')`
+  - Stack pointed to `GenerateTokensProvider.generateTokens(...)` called from Google auth service.
+
+### Root Cause
+- In [src/modules/auth/social/providers/google-authentication.service.ts](src/modules/auth/social/providers/google-authentication.service.ts), the `if (!user)` branch called `throwIfUnauthorized(new Error('User not found'), ...)`.
+- `throwIfUnauthorized` only throws for known auth-pattern messages (`unauthorized`, `invalid token`, etc.), so `'User not found'` did not throw.
+- Execution continued and passed `null` into token generation.
+
+### Change Made
+- Updated [src/modules/auth/social/providers/google-authentication.service.ts](src/modules/auth/social/providers/google-authentication.service.ts):
+  - Added explicit `UnauthorizedException` throw when Google payload lacks `sub` claim.
+  - Replaced non-throwing helper call in `if (!user)` with direct `UnauthorizedException` throw.
+
+### Verification
+- Code path now stops with 401 before token generation when user is not found or token payload is malformed.
+- Null user can no longer reach `GenerateTokensProvider.generateTokens`.
+
+### Lesson/Topic Context
+- Pattern-matching helper functions are not guaranteed to throw for arbitrary messages.
+- For must-stop guard conditions (`if (!entity)`), throw explicit exceptions directly.

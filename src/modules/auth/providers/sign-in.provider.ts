@@ -4,10 +4,11 @@ import { SignInDto } from '../dtos/signin.dto';
 import { HashingProvider } from './hashing.provider';
 import { throwIfRequestTimeout } from '../../../common/exceptions/request-timeout.helper';
 import { throwIfServiceUnavailable } from '../../../common/exceptions/service-unavailable.helper';
-import { FindOneUserByEmailProvider } from '../../users/provider/find-one-user-by-email.provider';
+import { FindOneUserByEmailProvider } from '../../users/providers/find-one-user-by-email.provider';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { IActiveUser } from '../interfaces/active-user.interface';
+import { GenerateTokensProvider } from './generate-tokens.provider';
 
 /**
  * Authentication provider handling user sign-in operations.
@@ -26,8 +27,7 @@ export class SignInProvider {
    *
    * @param {FindOneUserByEmailProvider} findOneUserByEmailProvider - Service for finding users by email
    * @param {HashingProvider} hashingProvider - Service for password hashing and comparison
-   * @param {JwtService} jwtService - NestJS JWT service for token generation
-   * @param {ConfigService} configService - Global configuration service for accessing JWT settings
+   * @param {GenerateTokensProvider} generateTokensProvider - Service for generating JWT tokens
    */
   constructor(
     @Inject(forwardRef(() => FindOneUserByEmailProvider))
@@ -36,9 +36,9 @@ export class SignInProvider {
     @Inject(HashingProvider)
     private readonly hashingProvider: HashingProvider,
 
-    private readonly jwtService: JwtService,
 
-    private readonly configService: ConfigService,
+
+    private readonly generateTokensProvider: GenerateTokensProvider,
   ) {}
 
   /**
@@ -61,16 +61,12 @@ export class SignInProvider {
    *   email: 'user@example.com',
    *   password: 'password123'
    * });
-   * // Returns: { message: 'Sign-in successful', accessToken: '...' }
+   * // Returns: { message: 'Sign-in successful', accessToken: '...', refreshToken: '...' }
    */
   public async signIn(
     signInDto: SignInDto,
-  ): Promise<{ message: string; accessToken: string }> {
+  ): Promise<{ message: string; accessToken: string, refreshToken: string }> {
     try {
-      // Find the user email id and password in the database using usersService
-      // throw exceptions if user not found or password is incorrect
-      // compare password to the hashed password stored in the database using the hashing provider
-      //  send confirmation
       const user = await this.findOneUserByEmailProvider.findOneByEmail(
         signInDto.email,
       );
@@ -93,16 +89,13 @@ export class SignInProvider {
         });
       }
 
-      const jwtConfig = this.configService.get('appConfig').jwt;
-      const accessToken = await this.jwtService.signAsync(
-        { sub: user.id, email: user.email } as IActiveUser,
-        {
-          ...jwtConfig.signOptions,
-          secret: jwtConfig.secret,
-        },
-      );
-
-      return { message: 'Sign-in successful', accessToken };
+      return await this.generateTokensProvider
+        .generateTokens(user)
+        .then((tokens) => ({
+          message: 'Sign-in successful',
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+        }));
     } catch (error) {
       throwIfRequestTimeout(error, {
         message: 'Failed to sign in',

@@ -15,7 +15,7 @@ import { CreateUserDto } from '../dtos/create-user.dto';
 import { User } from '../user.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { HashingProvider } from '../../auth/provider/hashing.provider';
+import { HashingProvider } from '../../auth/providers/hashing.provider';
 
 /**
  * Handles single user creation with validation, duplicate checking, and password hashing.

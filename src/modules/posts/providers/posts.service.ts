@@ -6,7 +6,6 @@ import { CreateManyPostsDto } from '../dtos/create-many-posts.dto';
 import { assertResourceExists } from '../../../common/exceptions/not-found.helper';
 import { throwIfUniqueConstraintViolation } from '../../../common/exceptions/unique-constraint.helper';
 import { throwIfRequestTimeout } from '../../../common/exceptions/request-timeout.helper';
-import { validateEmail } from '../../../common/exceptions/bad-request.helper';
 import { throwIfServiceUnavailable } from '../../../common/exceptions/service-unavailable.helper';
 import { throwIfUnexpectedError } from '../../../common/exceptions/internal-error.helper';
 import { TagRelationValidator } from '../../../common/validators/tag-relation.validator';

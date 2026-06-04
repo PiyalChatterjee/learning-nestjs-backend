@@ -7,7 +7,7 @@ import {
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import { PatchUserDto } from '../dtos/patch-user.dto';
-import { AuthService } from '../../auth/provider/auth.service';
+import { AuthService } from '../../auth/providers/auth.service';
 import { assertResourceExists } from '../../../common/exceptions/not-found.helper';
 import { throwIfRequestTimeout } from '../../../common/exceptions/request-timeout.helper';
 import {
@@ -27,9 +27,12 @@ import { PaginationQueryDto } from '../../../common/paginations/dtos/pagination-
 import { PaginationProvider } from '../../../common/paginations/provider/pagination.provider';
 import { IPaginated } from '../../../common/paginations/interfaces/paginated.interface';
 import { TDeleteResult } from '../../../common/types/delete-result.type';
-import { HashingProvider } from '../../auth/provider/hashing.provider';
+import { HashingProvider } from '../../auth/providers/hashing.provider';
 import { CreateUserProvider } from './create-user.provider';
 import { FindOneUserByEmailProvider } from './find-one-user-by-email.provider';
+import { FindOneByGoogleIdProvider } from './find-one-by-google-id.provider';
+import { IGoogleUser } from '../interfaces/google-user.interface';
+import { CreateGoogleUserProvider } from './create-google-user.provider';
 
 /**
  * Internal representation of persisted user data.
@@ -75,6 +78,8 @@ export class UsersService {
    * @param userCreateManyProvider Provider for atomic batch user creation operations.
    * @param paginationProvider Provider for consistent pagination across user queries.
    * @param createUserProvider Provider for encapsulated user creation logic, including validation and hashing.
+   * @param findOneUserByEmailProvider Provider for finding users by email address.
+   * @param findOneByGoogleIdProvider Provider for finding users by Google OAuth ID.
    */
   constructor(
     @Inject(forwardRef(() => AuthService))
@@ -90,6 +95,8 @@ export class UsersService {
 
     private readonly createUserProvider: CreateUserProvider,
     private readonly findOneUserByEmailProvider: FindOneUserByEmailProvider,
+    private readonly findOneByGoogleIdProvider: FindOneByGoogleIdProvider,
+    private readonly createGoogleUserProvider: CreateGoogleUserProvider,
   ) {}
   // Service methods will go here, utilizing authService for authentication checks and userRepository for database operations.
 
@@ -385,6 +392,60 @@ export class UsersService {
       throwIfUnexpectedError(error, {
         userMessage: 'Failed to fetch user',
         context: 'user-find-by-email',
+        originalError: error,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Finds a user by Google OAuth ID.
+   * Used during Google OAuth authentication flow to check if user already exists.
+   *
+   * @param googleId - The Google unique identifier (sub claim from Google ID token).
+   * @returns The user record if found, null if no user is associated with this Google ID.
+   * @throws {ServiceUnavailableException} If the database is unavailable.
+   * @throws {RequestTimeoutException} If the query times out.
+   * @throws {InternalServerErrorException} For unexpected errors.
+   */
+  public async findOneByGoogleId(googleId: string): Promise<User | null> {
+    try {
+      return await this.findOneByGoogleIdProvider.findOneByGoogleId(googleId);
+    } catch (error) {
+      throwIfServiceUnavailable(error, {
+        message: 'Cannot fetch user at this moment',
+        serviceName: 'database',
+        shouldLog: true,
+      });
+      throwIfRequestTimeout(error, {
+        message: 'Failed to fetch user',
+        context: 'database query',
+      });
+      throwIfUnexpectedError(error, {
+        userMessage: 'Failed to fetch user',
+        context: 'user-find-by-google-id',
+        originalError: error,
+      });
+      throw error;
+    }
+  }
+
+  public async createGoogleUser(googleUser: IGoogleUser): Promise<User> {
+    try {
+      return await this.createGoogleUserProvider.createGoogleUser(googleUser);
+    } catch (error) {
+      throwIfServiceUnavailable(error, {
+        message: 'Cannot create Google user at this moment',
+        serviceName: 'database',
+        shouldLog: true,
+      });
+      throwIfRequestTimeout(error, {
+        message: 'Failed to create Google user',
+        context: 'database query',
+      });
+      throwIfUnexpectedError(error, {
+        userMessage: 'Failed to create Google user',
+        context: 'user-create-google',
         originalError: error,
       });
       throw error;

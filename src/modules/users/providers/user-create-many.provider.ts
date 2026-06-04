@@ -14,7 +14,7 @@ import { User } from '../user.entity';
 import { DataSource } from 'typeorm';
 import { CreateManyUsersDto } from '../dtos/create-many-users.dto';
 import { CreateUserProvider } from './create-user.provider';
-import { HashingProvider } from '../../auth/provider/hashing.provider';
+import { HashingProvider } from '../../auth/providers/hashing.provider';
 
 /**
  * Handles bulk user creation within a single atomic database transaction.

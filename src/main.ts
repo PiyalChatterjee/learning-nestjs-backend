@@ -26,9 +26,12 @@ async function bootstrap() {
     .addServer('http://localhost:8000', 'Local development server')
     .setVersion('1.0')
     .build();
-  
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
+
+  //enable CORS for all origins (adjust as needed for production)
+  app.enableCors();
 
   await app.listen(8000);
 }
