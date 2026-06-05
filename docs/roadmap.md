@@ -74,6 +74,11 @@ Build a course-aligned backend in small learning increments, with proof of imple
 	- Swagger UI now displays "Authorize" button for JWT token entry
 	- All protected endpoints automatically documented as requiring Bearer token
 - **Full Swagger documentation** with @ApiPropertyOptional decorators on all filter, sort, and pagination query parameters
+- **File uploads module completed with Azure Blob Storage** (AWS replacement):
+	- `POST /v1/uploads/file` and `POST /v1/uploads/files` implemented and manually verified
+	- Upload metadata persisted in `uploads` table (`blobName`, `url`, `size`, `mimeType`, `originalFileName`, `uploadedAt`)
+	- CDN delivery integrated through Azure Front Door endpoint (`AZURE_CDN_ENDPOINT`) with safe fallback to direct blob URL
+	- Upload routes explicitly marked public with `@Auth(AuthType.None)` under global auth guard strategy
 
 ## Week-by-Week Status
 
@@ -197,21 +202,21 @@ Status: Complete (2026-06-06)
 
 ## Week 10: Exception Filter + Middleware + E2E Tests
 
-Status: Not Started
+Status: In Progress
 
-- Global `HttpExceptionFilter` to standardise error response shape
-- Simple `LoggerMiddleware` to log method + URL on every request
+- Global `HttpExceptionFilter` to standardise error response shape (Completed)
+- Simple `LoggerMiddleware` to log method + URL on every request (Optional, pending)
 - E2E tests for bulk operations (success paths and transaction rollback)
 - Auth-focused E2E tests (guard defaults, public route opt-out)
 
 ## Immediate Next Priorities
 
-1. **Exception filter** — global `HttpExceptionFilter` to standardise error response envelope
-2. **Middleware** — `LoggerMiddleware` for request logging (complete the pipeline)
-3. **E2E test coverage** for bulk endpoints (users, posts, tags): success cases, batch size limits, duplicate detection, transaction rollback on conflict.
-4. **Auth route audit and tests** — add focused tests to verify default Bearer guard behavior and explicit `@Auth(AuthType.None)` bypass only on intended public endpoints.
-5. **Optional:** Docker exploration for containerized local development and deployment simulation.
-6. **Migration strategy** — replace `synchronize: true` with explicit TypeORM migrations when ready.
+1. **E2E test coverage** for bulk endpoints (users, posts, tags): success cases, batch size limits, duplicate detection, transaction rollback on conflict.
+2. **Auth route audit and tests** — add focused tests to verify default Bearer guard behavior and explicit `@Auth(AuthType.None)` bypass only on intended public endpoints.
+3. **Uploads automated tests (deferred)** — add focused unit/integration coverage for uploads service/controller and CDN URL fallback behavior.
+4. **Migration strategy** — replace `synchronize: true` with explicit TypeORM migrations when ready.
+5. **Optional:** `LoggerMiddleware` for request logging (pipeline completeness).
+6. **Optional:** Docker exploration for containerized local development and deployment simulation.
 
 ## Continuous Tracking Rules
 
@@ -240,3 +245,4 @@ Status: Not Started
 | 2026-06-03 | JWT global configuration consolidation | Moved JWT config from auth module local scope to global app config; added JWT environment validation (secret, audience, issuer, TTL); updated SignInProvider to use ConfigService; removed redundant local jwt.config file and directory | src/config/app.config.ts, src/config/environment.validation.ts, src/modules/auth/auth.module.ts, src/modules/auth/provider/sign-in.provider.ts | 5 | Are there other auth-specific configs that should be moved to global scope later? |
 | 2026-06-04 | Global auth guard + JWT identity propagation | Registered `AuthenticationGuard` as APP_GUARD with default Bearer auth, introduced route-level auth metadata (`@Auth` + `AuthType`), added `@ActiveUser` decorator for claims access, and updated post creation flow to derive author from JWT instead of `authorEmail` payload field | src/app.module.ts, src/modules/auth/guards/authentication.guard.ts, src/modules/auth/decorators/auth.decorator.ts, src/modules/auth/decorators/active-user.decorator.ts, src/modules/posts/dtos/create-post.dto.ts, src/modules/posts/providers/create-post.provider.ts | 5 | Should refresh-token flow be added before expanding protected write operations? |
 | 2026-06-05 | Google OAuth API wrapper + config fixes | Implemented GoogleAuthenticationService as API wrapper for Google Auth Library with ID token verification, user lookup by googleId, and JWT token generation; added google-authentication endpoint at /v1/auth/google-authentication; fixed TypeORM synchronize config parsing; added explicit error handling for null-user and missing token payloads | src/modules/auth/social/providers/google-authentication.service.ts, src/modules/auth/social/google-authentication.controller.ts, src/modules/users/providers/find-one-by-google-id.provider.ts, src/modules/users/providers/users.service.ts, src/app.module.ts, src/config/app.config.ts, docs/learning-issues.md | 4 | Should auto-provision (create user on first Google login) be added? Should refresh-token be generated alongside access token in Google flow? |
+| 2026-06-06 | File upload module with Azure Blob + Front Door CDN | Replaced AWS upload flow with Azure Blob Storage module (single + multiple upload endpoints), persisted upload metadata in PostgreSQL, integrated Azure Front Door CDN URL generation with endpoint normalization/fallback guard, and validated via manual upload tests + Azure portal confirmation | src/modules/uploads/uploads.controller.ts, src/modules/uploads/providers/uploads.service.ts, src/modules/uploads/upload.entity.ts, src/config/app.config.ts, .env, .env.development.local, src/modules/uploads/http/*.http, docs/learning-issues.md | 5 | Add automated upload tests now or after finishing remaining Week 10 platform tasks? |

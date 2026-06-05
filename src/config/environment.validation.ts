@@ -25,4 +25,7 @@ export default Joi.object({
   GOOGLE_CLIENT_ID: Joi.string().required(),
   GOOGLE_CLIENT_SECRET: Joi.string().required(),
   API_VERSION: Joi.string().default('0.1.1'),
+  AZURE_STORAGE_CONNECTION_STRING: Joi.string().required(),
+  AZURE_BLOB_CONTAINER_NAME: Joi.string().default('uploads'),
+  AZURE_CDN_ENDPOINT: Joi.string().uri().required(),
 });

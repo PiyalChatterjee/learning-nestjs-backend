@@ -226,3 +226,24 @@
 - Auth enforced with guards: Yes — global `AuthenticationGuard` with explicit public opt-out.
 - Response shape/serialization reviewed: Yes — `DataResponseInterceptor` + `ClassSerializerInterceptor` globally registered.
 - Docs updated after endpoint changes: Yes.
+
+## Week 4 Delta Update (2026-06-06) - Azure Uploads + CDN
+
+- What I completed:
+	- Implemented full uploads module using Azure Blob Storage as course-equivalent replacement for AWS S3.
+	- Added single and multiple upload routes: `POST /v1/uploads/file`, `POST /v1/uploads/files`.
+	- Persisted upload metadata in PostgreSQL (`uploads` table) with blob name, MIME type, size, original name, URL, timestamp.
+	- Added HTTPyac upload request files and validated multipart form-data behavior.
+	- Integrated Azure Front Door CDN endpoint into upload URL generation.
+	- Added CDN URL guard/normalization with automatic fallback to direct Blob URL when config is invalid/missing.
+- What I learned:
+	- Multipart uploads require correct part-boundary structure; malformed boundaries or wrong field mapping cause Multer to receive no file.
+	- CDN host configuration should be sanitized and validated before constructing public URLs.
+	- A safe fallback path (blob URL) prevents delivery breakage during CDN misconfiguration.
+- Verification evidence:
+	- Manual uploads succeeded for `.txt` and `.png` files.
+	- Files present in Azure Blob container `azureml`.
+	- API responses returned Azure Front Door URL format after CDN config deployment.
+	- DB records confirmed in `uploads` table.
+- Deferred to later:
+	- Automated unit/integration tests for uploads controller/service and CDN URL fallback scenarios.

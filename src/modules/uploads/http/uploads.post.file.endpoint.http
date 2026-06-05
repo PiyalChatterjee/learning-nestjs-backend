@@ -1,0 +1,21 @@
+### Upload a single text file
+POST http://localhost:8000/v1/uploads/file
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="sample.txt"
+Content-Type: text/plain
+
+< C:\Users\PiyalChatterjee\Documents\Projects\PIP\nestjs-backend\sample.txt
+--boundary--
+
+### Upload a single image file
+POST http://localhost:8000/v1/uploads/file
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="sample.png"
+Content-Type: image/png
+
+< C:\Users\PiyalChatterjee\Documents\Projects\PIP\nestjs-backend\sample.png
+--boundary--

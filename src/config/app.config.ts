@@ -24,4 +24,9 @@ export default registerAs('appConfig', () => ({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     },
   },
+  azureStorage: {
+    connectionString: process.env.AZURE_STORAGE_CONNECTION_STRING,
+    containerName: process.env.AZURE_BLOB_CONTAINER_NAME || 'uploads',
+    cdnEndpoint: process.env.AZURE_CDN_ENDPOINT,
+  },
 }));

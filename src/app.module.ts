@@ -24,6 +24,7 @@ import { AuthenticationGuard } from './modules/auth/guards/authentication.guard'
 import { DataResponseInterceptor } from './common/interceptors/data-response/data-response.interceptor';
 import { HttpExceptionFilter } from './common/exceptions/filters/http-exception/http-exception.filter';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { UploadsModule } from './modules/uploads/uploads.module';
 
 /**
  * Root application module that wires feature modules and infrastructure.
@@ -87,6 +88,7 @@ const ENV_FILE_PATH = ENV ? `.env.${ENV}.local` : '.env';
         manualInitialization: true,
       }),
     }),
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [
