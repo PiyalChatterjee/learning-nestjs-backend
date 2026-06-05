@@ -161,3 +161,68 @@
 - Auth enforced with guards where needed: Not yet (pending guard implementation).
 - Response shape/serialization reviewed: Partial (basic response shaping done, no serializer interceptors yet).
 - Docs updated after endpoint changes: Yes.
+
+## Week 3 Summary (2026-06-06)
+
+- What I completed:
+	- **Unit test suite fully fixed** — resolved 10 failing test specs by adding missing mock providers across auth and user provider tests; all 27 suites now passing.
+	- **Dynamic filtering on all list endpoints:**
+		- Posts: date range (startDate/endDate), status enum filter, title search (ILike)
+		- Users: firstName search (ILike)
+		- Tags: name search (ILike)
+	- **Dynamic sorting on all list endpoints** via `SortQueryDto` with allowlist validation to prevent SQL injection
+	- **DTO composition pattern** — `IntersectionType` to cleanly combine filter + sort + pagination DTOs per module
+	- **Swagger Bearer Authentication** — `addBearerAuth()` in bootstrap, `@ApiBearerAuth('access-token')` on all protected controllers; Authorize button in Swagger UI
+	- **Full Swagger query param documentation** — `@ApiPropertyOptional` with examples on all filter/sort/pagination fields
+	- **DataResponseInterceptor** (custom, global) — wraps all responses in `{ apiVersion, data }` envelope using ConfigService
+	- **ClassSerializerInterceptor** (global) — auto-strips `@Exclude()` fields (`password`, `googleId`) from all responses
+	- **Serialization via entity decorators** — `@Exclude()` on User entity sensitive fields; removed manual route-level `@UseInterceptors` from `createUser`
+	- **Roadmap + README updated** with current feature set and corrected next steps
+- What I learned:
+	- `APP_INTERCEPTOR` registration in module providers allows multiple interceptors applied in order — no `IntersectionType` needed, just multiple provider entries
+	- `ClassSerializerInterceptor` must come before `DataResponseInterceptor` so serialization runs on the raw entity before it's wrapped
+	- `ConfigModule.forRoot()` appearing twice in logs is normal — one is the root init, the other is `forFeature()` in UsersModule
+	- `@Exclude()` on entity fields is declarative — once set globally, no endpoint needs manual field filtering
+	- Allowlist validation on `sortBy` is critical to prevent SQL injection in dynamic order-by queries
+	- TypeORM `ILike` provides case-insensitive partial matching without raw SQL
+	- IntersectionType DTO composition cleanly scales across modules without duplicating pagination/sort logic
+- Where I got blocked:
+	- `multi_replace_string_in_file` failed on one tags import (empty old_string) — required separate fix
+	- JWT module appearing 3 times in startup logs was briefly confusing (normal — separate scoped instances per module)
+- How I resolved it:
+	- Fixed tags import by reading the file first and providing correct context lines for replacement
+	- Confirmed multiple module log entries are standard NestJS DI behavior, not bugs
+- Week close note:
+	- Week 3 completes the NestJS pipeline up to interceptors. Full request lifecycle now covered: Guards ✅ → Interceptors ✅ → Pipes ✅ → Controllers ✅. Exception filter and middleware remain to fully close the filter boundary layers.
+
+## Demo Evidence (Week 3)
+
+- Endpoints verified:
+	- `GET /v1/posts?sortBy=createdAt&sortOrder=desc&status=draft&search=nestjs` — 3 results returned, correctly filtered and sorted
+	- `GET /v1/users?sortBy=firstName&sortOrder=asc&search=john` — functional
+	- `GET /v1/tags?sortBy=name&search=react` — functional
+- Swagger UI:
+	- Authorize button visible; Bearer token accepted; protected endpoints work from Swagger UI
+	- All query params documented with descriptions and examples
+- Response shape:
+	- All responses wrapped in `{ apiVersion: "0.1.1", data: { ... } }`
+	- `password` and `googleId` absent from all user responses
+- Tests: 27/27 suites passing, 37/37 tests passing
+
+## Next Week Focus (Week 4)
+
+- Planned lessons:
+	- Global `HttpExceptionFilter` to standardise error response shape
+	- `LoggerMiddleware` to log method + URL (complete the pipeline)
+	- E2E tests for bulk operations (success + rollback scenarios)
+	- Auth-focused E2E tests (guard defaults, public opt-out verification)
+- Risks and mitigation:
+	- Risk: E2E tests require live DB — ensure PostgreSQL is running before test run.
+	- Mitigation: Keep unit and E2E test configs separate (`jest` vs `jest:e2e` scripts).
+
+## Standards Self-Check (Week 3)
+
+- Inputs validated with DTO + pipes: Yes.
+- Auth enforced with guards: Yes — global `AuthenticationGuard` with explicit public opt-out.
+- Response shape/serialization reviewed: Yes — `DataResponseInterceptor` + `ClassSerializerInterceptor` globally registered.
+- Docs updated after endpoint changes: Yes.

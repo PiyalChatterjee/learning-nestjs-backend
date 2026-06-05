@@ -214,15 +214,13 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 
 ## Next Steps (Post-Week 9)
 
-1. **E2E tests for bulk operations** — test success paths, transaction rollback scenarios, and error responses for users/posts/tags bulk endpoints.
-2. Add auth-focused tests for global guard defaults and explicit public-route opt-outs.
-3. Write unit tests for new bulk provider patterns and transaction semantics.
-4. Write integration tests for post-tags-metadata workflows with bulk operations.
-5. Extend bulk operations pattern to meta-options module (optional).
-6. **E2E tests for filtering & sorting** — validate all query parameter combinations, edge cases, and error handling on list endpoints.
-7. **Migrate to explicit TypeORM migrations** (infrastructure ready in `src/database/data-source.ts`; switch `synchronize: false` when ready; see "Database & Migrations" section).
-8. Explore Docker setup for containerized local development.
-9. Add health endpoints that separate API liveness from DB readiness.
+1. **Global exception filter** — standardise error response shape to match `{ apiVersion, data }` envelope.
+2. **Logger middleware** — log method + URL on every request to complete the full NestJS pipeline.
+3. **E2E tests for bulk operations** — test success paths, transaction rollback scenarios, and error responses for users/posts/tags bulk endpoints.
+4. Add auth-focused E2E tests for global guard defaults and explicit public-route opt-outs.
+5. **Migrate to explicit TypeORM migrations** (infrastructure ready in `src/database/data-source.ts`; switch `synchronize: false` when ready; see "Database & Migrations" section).
+6. Explore Docker setup for containerized local development.
+7. Add health endpoints that separate API liveness from DB readiness.
 
 ## Learning Philosophy
 

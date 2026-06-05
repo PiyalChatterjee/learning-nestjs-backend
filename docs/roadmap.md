@@ -170,29 +170,44 @@ Status: Complete (2026-06-01)
 - All tests pass (12 test suites, 12 passed); providers mocked in service tests
 - Pattern is documented and ready for reuse in meta-options or future modules
 
-## Week 9: Quality + Auth Configuration + Querying + Optional Docker Exploration
+## Week 9: Quality + Auth Configuration + Querying + Interceptors + Serialization
 
-Status: In Progress
+Status: Complete (2026-06-06)
 
 - **JWT global configuration consolidation** — JWT config moved from auth module local scope to global app config with environment validation (2026-06-03).
 - **Global guard rollout completed** — `AuthenticationGuard` is applied via `APP_GUARD` with default Bearer protection and explicit public-route opt-out using `@Auth(AuthType.None)`.
 - **JWT-based post authorship** — create-post flow now uses authenticated user claims instead of request body `authorEmail`.
-- E2E test coverage for bulk create success and partial failure handling (transaction rollback scenarios).
-- Unit test expansion for new bulk operation patterns and transaction rollback scenarios.
-- Filtering and sorting support on list endpoints (pagination complete).
-- Optional: Docker exploration for containerized local development.
-- Optional: Extend bulk operations pattern to meta-options module.
+- **Google OAuth 2.0 API wrapper** — `GoogleAuthenticationService` wraps Google Auth Library; supports ID token verification, user lookup by `googleId`, JWT generation.
+- **Dynamic filtering and sorting** on all three list endpoints:
+	- Posts: date range, status, title search (ILike), sort by allowlisted fields
+	- Users: firstName search (ILike), sort
+	- Tags: name search (ILike), sort
+	- `SortQueryDto` + module filter DTOs composed via `IntersectionType`
+	- SQL injection protection via sortBy allowlist
+- **Swagger Bearer Authentication** — `addBearerAuth()` in bootstrap, `@ApiBearerAuth('access-token')` on all protected controllers; Swagger UI now shows Authorize button
+- **Full Swagger query param docs** — `@ApiPropertyOptional` decorators on all filter, sort, pagination fields with examples
+- **DataResponseInterceptor** (global via `APP_INTERCEPTOR`) — wraps all responses in `{ apiVersion, data }` envelope
+- **ClassSerializerInterceptor** (global via `APP_INTERCEPTOR`) — strips `@Exclude()` fields (`password`, `googleId`) from all responses automatically
+- **Serialization via entity decorators** — `@Exclude()` on User entity sensitive fields; no manual field stripping needed
+- **Unit test suite at 27/27 suites passing** — fixed 10 previously failing test specs (missing mock providers across auth and user providers)
+
+## Week 10: Exception Filter + Middleware + E2E Tests
+
+Status: Not Started
+
+- Global `HttpExceptionFilter` to standardise error response shape
+- Simple `LoggerMiddleware` to log method + URL on every request
+- E2E tests for bulk operations (success paths and transaction rollback)
+- Auth-focused E2E tests (guard defaults, public route opt-out)
 
 ## Immediate Next Priorities
 
-1. **E2E test coverage** for bulk endpoints (users, posts, tags): success cases, batch size limits, duplicate detection, transaction rollback on conflict.
-2. **Auth route audit and tests** — add focused tests to verify default Bearer guard behavior and explicit `@Auth(AuthType.None)` bypass only on intended public endpoints.
-3. **Unit test expansion** for bulk providers: test transaction rollback scenarios, batch validation edge cases.
-4. **Strengthen DB lifecycle further** by replacing `synchronize: true` with proper migration strategy and seeds.
-5. **Integration tests** for `post_tags` write/read behavior, author-post ownership, and metadata nesting in bulk scenarios.
-6. **Advanced query patterns**: author-centric queries, inverse mappings (users -> posts), filtering and sorting enhancements.
-7. **Optional:** Extend bulk operations to meta-options module.
-8. **Optional:** Docker exploration for containerized local development and deployment simulation.
+1. **Exception filter** — global `HttpExceptionFilter` to standardise error response envelope
+2. **Middleware** — `LoggerMiddleware` for request logging (complete the pipeline)
+3. **E2E test coverage** for bulk endpoints (users, posts, tags): success cases, batch size limits, duplicate detection, transaction rollback on conflict.
+4. **Auth route audit and tests** — add focused tests to verify default Bearer guard behavior and explicit `@Auth(AuthType.None)` bypass only on intended public endpoints.
+5. **Optional:** Docker exploration for containerized local development and deployment simulation.
+6. **Migration strategy** — replace `synchronize: true` with explicit TypeORM migrations when ready.
 
 ## Continuous Tracking Rules
 
