@@ -6,6 +6,10 @@ Build a course-aligned backend in small learning increments, with proof of imple
 
 ## Current Snapshot (2026-06-06)
 
+- **Request Lifecycle Complete (Middleware omitted as optional):** All core NestJS request/response phases implemented—guards, interceptors, pipes, exception filters—with global registration in `AppModule` for consistency.
+- **Global Exception Filter implemented**: `HttpExceptionFilter` catches all exceptions at filter stage, formats responses with timestamp/path/message, and logs unhandled (non-HttpException) errors via injected `Logger`.
+- **Rate Limiting (Throttler)**: `@nestjs/throttler` guard active globally with 100 requests per 60-second window per client IP; returns 429 on limit exceeded; sensitive routes can apply stricter limits via `@Throttle()` decorator.
+- **Validation Pipe migrated to AppModule**: Moved from `main.ts` to module-level `APP_PIPE` for centralized global infrastructure management.
 - Core app bootstrap is in place with versioned routing and validation.
 - Users module has full controller-level CRUD-style routes with DTO validation and TypeORM repository-backed service methods.
 - Posts module has CRUD endpoints (create, get all, get by id, put, patch, delete) with validated DTOs, enums, repository-backed service methods, formatted author details, and relation-aware tag resolution.

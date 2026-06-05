@@ -1,4 +1,4 @@
-import { ClassSerializerInterceptor, Module } from '@nestjs/common';
+import { ClassSerializerInterceptor, Module, ValidationPipe } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 // Imported modules
@@ -17,11 +17,13 @@ import databaseConfig from './config/database.config';
 import environmentValidationSchema from './config/environment.validation';
 import { DatabaseConnectionBootstrap } from './database/database-connection.bootstrap';
 import { AccessTokenGuard } from './modules/auth/guards/access-token.guard';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { jwtConfig } from './config/jwt.config';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthenticationGuard } from './modules/auth/guards/authentication.guard';
 import { DataResponseInterceptor } from './common/interceptors/data-response/data-response.interceptor';
+import { HttpExceptionFilter } from './common/exceptions/filters/http-exception/http-exception.filter';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 /**
  * Root application module that wires feature modules and infrastructure.
@@ -58,6 +60,12 @@ const ENV_FILE_PATH = ENV ? `.env.${ENV}.local` : '.env';
     MetaOptionsModule,
     PaginationModule,
     JwtModule.registerAsync(jwtConfig),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 60 seconds
+        limit: 100, // 100 requests per window
+      },
+    ]),
     // Asynchronously configures TypeORM using environment variables.
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
@@ -89,12 +97,28 @@ const ENV_FILE_PATH = ENV ? `.env.${ENV}.local` : '.env';
       useClass: AuthenticationGuard, // Global guard that applies authentication to all routes by default.
     },
     {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard, // Global rate limiting guard to restrict requests per client IP.
+    },
+    {
       provide: APP_INTERCEPTOR,
       useClass: ClassSerializerInterceptor, // Global interceptor to handle @Exclude and other class-transformer decorators for all responses.
     },
     {
       provide: APP_INTERCEPTOR,
       useClass: DataResponseInterceptor, // Global interceptor to standardize API responses and exclude sensitive fields.
+    },
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter, // Global exception filter to handle HTTP exceptions and format error responses.
+    },
+    {
+      provide: APP_PIPE,
+      useValue: new ValidationPipe({
+        whitelist: true,
+        transform: true,
+        forbidNonWhitelisted: true,
+      }), // Global validation pipe to validate and transform incoming request data based on DTOs and class-validator decorators.
     },
     AccessTokenGuard, // Register AccessTokenGuard as a provider for dependency injection in AuthenticationGuard and other guards/services that may need it.
   ],

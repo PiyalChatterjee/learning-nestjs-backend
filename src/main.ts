@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { RequestMethod, ValidationPipe } from '@nestjs/common';
+import { RequestMethod } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
@@ -12,13 +12,6 @@ async function bootstrap() {
   app.setGlobalPrefix('v1', {
     exclude: [{ path: '', method: RequestMethod.GET }],
   });
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-    }),
-  );
 
   const config = new DocumentBuilder()
     .setTitle('NestJS Backend API')

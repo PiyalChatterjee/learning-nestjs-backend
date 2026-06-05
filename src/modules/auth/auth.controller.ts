@@ -4,6 +4,7 @@ import { SignInDto } from './dtos/signin.dto';
 import { Auth } from './decorators/auth.decorator';
 import { AuthType } from './enums/auth-type.enum';
 import { RefreshTokenDto } from './dtos/refresh-token.dto';
+import { Throttle } from '@nestjs/throttler';
 
 /**
  * Authentication controller exposing public and protected authentication-related HTTP endpoints.
@@ -77,6 +78,7 @@ export class AuthController {
    */
   @Auth(AuthType.None)
   @Post('sign-in')
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // Limit to 10 sign-in attempts per minute per IP to mitigate brute-force attacks
   @HttpCode(HttpStatus.OK)
   public async signIn(@Body() signInDto: SignInDto) {
     return await this.authService.signIn(signInDto);

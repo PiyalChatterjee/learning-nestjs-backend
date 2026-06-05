@@ -2,7 +2,7 @@
 
 **Goal:** Structured NestJS backend learning through hands-on implementation of real-world patterns—users, posts, tags, metadata—with focus on persistence, relationships, validation, and reusable architecture.
 
-**Status:** Week 9 complete. All core CRUD flows for 4 major entities with many-to-many relationships, validated DTOs, full exception handling layer (8 helpers + bulk-operation helper covering 400/401/403/404/408/409/500/503), database relationships modeled (TypeORM entities), API documentation with Swagger (including Bearer auth), DB outage resilience enabled, **bulk operations with atomic transactions** implemented for high-priority modules (users, posts, tags), **hardened shared pagination applied to all list GET endpoints**, **JWT configuration consolidated to shared config**, **global route protection enabled via AuthenticationGuard (default Bearer, explicit public opt-out via @Auth(AuthType.None))**, **Google OAuth 2.0 API wrapper integrated** with `GoogleAuthenticationService` for third-party authentication via `POST /v1/auth/google-authentication`, and **dynamic filtering & sorting on all list endpoints** with full Swagger documentation and Bearer token authentication.
+**Status:** Week 9 complete. All core CRUD flows for 4 major entities with many-to-many relationships, validated DTOs, full exception handling layer (8 helpers + bulk-operation helper covering 400/401/403/404/408/409/500/503), database relationships modeled (TypeORM entities), API documentation with Swagger (including Bearer auth), DB outage resilience enabled, **bulk operations with atomic transactions** implemented for high-priority modules (users, posts, tags), **hardened shared pagination applied to all list GET endpoints**, **JWT configuration consolidated to shared config**, **global route protection enabled via AuthenticationGuard (default Bearer, explicit public opt-out via @Auth(AuthType.None))**, **Google OAuth 2.0 API wrapper integrated** with `GoogleAuthenticationService` for third-party authentication via `POST /v1/auth/google-authentication`, **dynamic filtering & sorting on all list endpoints** with full Swagger documentation and Bearer token authentication, **complete request lifecycle implemented** with global exception filter for error response shaping and `@nestjs/throttler` for rate limiting (100 req/60s per IP).
 
 ## Base Structure
 
@@ -26,6 +26,8 @@
 - **DTO Validation:** Every endpoint enforces request shape via class-validator decorators (enums, URLs, arrays, nested objects).
 - **Relationship Integrity:** Service-level tag resolution rejects requests with missing tags (404), validated on create/update/patch.
 - **Unique Constraint Handling:** DB uniqueness violations (e.g., duplicate slugs) mapped to clean 409 Conflict responses.
+- **Global Exception Filter & Error Response Shaping:** `HttpExceptionFilter` intercepts all exceptions at filter stage, formats uniform responses with `statusCode`, `timestamp`, `path`, and `message` fields, and logs unexpected errors via injected `Logger` for observability.
+- **Rate Limiting (Throttler Guard):** Global rate limit of 100 requests per 60-second window per client IP; excess requests receive 429 Too Many Requests; sensitive routes (e.g., auth endpoints) can enforce stricter limits via `@Throttle(limit, ttl)` decorator.
 - **Full Exception Layer:** 9 reusable helpers cover every HTTP error scenario at the service layer:
   - `bad-request.helper` — email format, password strength, field length, required fields (400)
   - `unauthorized.helper` — token presence, user auth state, JWT errors (401)
@@ -52,6 +54,7 @@
   - Hardening rules implemented: max `limit` cap (`100`), deterministic default ordering (`id DESC`), query-preserving pagination links, and empty-result-safe metadata.
 - **Swagger Documentation:** All endpoints documented with request/response shapes, error codes, and parameter descriptions.
 - **Compodoc 100% Coverage:** All exports have JSDoc (class, method, property, interface).
+- **Centralized Global Infrastructure (AppModule):** All global handlers registered via `APP_*` tokens in module for DI-managed lifecycle: `APP_GUARD` (authentication, throttling), `APP_INTERCEPTOR` (serialization, response formatting), `APP_PIPE` (validation), `APP_FILTER` (exception handling).
 
 ## Setup & Run
 
@@ -98,6 +101,28 @@ Server runs on `http://localhost:8000`
 ```bash
 npm run test
 ```
+
+## Request Lifecycle Reference
+
+Full NestJS request/response flow as implemented:
+
+```
+Request → Middleware (optional) → Guards → Interceptors (pre) → Pipes → Controller → Service → Interceptors (post) → Response
+                                                                                         ↓ (exception)
+                                                                              Exception Filter ← catches here
+```
+
+**Implemented components:**
+- **Guards:** `AuthenticationGuard` (default Bearer + public opt-out), `ThrottlerGuard` (100 req/60s)
+- **Interceptors (pre/post):** `ClassSerializerInterceptor` (class-transformer), `DataResponseInterceptor` (standardized JSON shape)
+- **Pipes:** `ValidationPipe` (class-validator, whitelist, forbid unknown)
+- **Exception Filter:** `HttpExceptionFilter` (catch-all, formats error responses with timestamp/path, logs unhandled errors)
+- **Middleware:** Omitted (optional for learning scope; useful for logging, rate limiting, CORS which are handled via guards/config)
+
+**Registering global handlers in `AppModule` via `APP_*` tokens ensures:**
+- DI container manages all global infrastructure
+- Consistent dependency injection (e.g., services, loggers can be injected into filters)
+- Single source of truth for lifecycle configuration
 
 ### Generate Documentation
 
