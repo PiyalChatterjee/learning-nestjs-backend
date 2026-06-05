@@ -396,6 +396,28 @@ export class UsersService {
     }
   }
 
+  /**
+   * Finds a user by their email address.
+   *
+   * Performs a case-sensitive email lookup in the database. Used primarily
+   * during sign-in to retrieve user credentials for password verification.
+   *
+   * @param {string} email - The email address to search for.
+   *
+   * @returns {Promise<User | null>} The User entity if found, null if no user
+   *          with that email exists.
+   *
+   * @throws {ServiceUnavailableException} If the database is unavailable.
+   * @throws {RequestTimeoutException} If the query times out.
+   * @throws {InternalServerErrorException} For unexpected errors during the query.
+   *
+   * @example
+   * // Find a user by email during sign-in
+   * const user = await userService.findOneByEmail('john@example.com');
+   * if (!user) {
+   *   throw new UnauthorizedException('User not found');
+   * }
+   */
   public async findOneByEmail(email: string): Promise<User | null> {
     try {
       return await this.findOneUserByEmailProvider.findOneByEmail(email);
@@ -478,6 +500,35 @@ export class UsersService {
     }
   }
 
+  /**
+   * Creates a new user via Google OAuth authentication.
+   *
+   * Delegates to CreateGoogleUserProvider to persist a user account that was
+   * created as part of the Google OAuth sign-up or sign-in flow. This method
+   * wraps error handling for database and timeout failures.
+   *
+   * @param {IGoogleUser} googleUser - User information extracted from Google ID token,
+   *                                    including googleId, email, firstName, and optionally lastName.
+   *
+   * @returns {Promise<User>} The newly created and persisted User entity with
+   *          an assigned id and database-managed timestamps.
+   *
+   * @throws {ConflictException} If a user with the same email already exists.
+   * @throws {ServiceUnavailableException} If the database is unavailable.
+   * @throws {RequestTimeoutException} If the database query times out.
+   * @throws {InternalServerErrorException} For unexpected errors during user creation.
+   *
+   * @example
+   * // Create a user from Google OAuth token data
+   * const googleUser: IGoogleUser = {
+   *   googleId: '118123456789',
+   *   email: 'john@gmail.com',
+   *   firstName: 'John',
+   *   lastName: 'Doe'
+   * };
+   * const newUser = await userService.createGoogleUser(googleUser);
+   * // User is now persisted, can be used to generate tokens
+   */
   public async createGoogleUser(googleUser: IGoogleUser): Promise<User> {
     try {
       return await this.createGoogleUserProvider.createGoogleUser(googleUser);
