@@ -127,7 +127,6 @@ export class UsersController {
    */
   @Post()
   @Auth(AuthType.None) // No authentication required for user creation
-  @UseInterceptors(ClassSerializerInterceptor) // Ensure response is properly serialized
   @ApiOperation({ summary: 'Create a new user' })
   @ApiResponse({ status: 201, description: 'Successfully created a new user' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })

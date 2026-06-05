@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { ClassSerializerInterceptor, Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 // Imported modules
@@ -17,10 +17,11 @@ import databaseConfig from './config/database.config';
 import environmentValidationSchema from './config/environment.validation';
 import { DatabaseConnectionBootstrap } from './database/database-connection.bootstrap';
 import { AccessTokenGuard } from './modules/auth/guards/access-token.guard';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { jwtConfig } from './config/jwt.config';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthenticationGuard } from './modules/auth/guards/authentication.guard';
+import { DataResponseInterceptor } from './common/interceptors/data-response/data-response.interceptor';
 
 /**
  * Root application module that wires feature modules and infrastructure.
@@ -45,6 +46,10 @@ const ENV_FILE_PATH = ENV ? `.env.${ENV}.local` : '.env';
       envFilePath: ENV_FILE_PATH,
       load: [databaseConfig, appConfig],
       validationSchema: environmentValidationSchema, // Add Joi validation schema here if needed
+      validationOptions: {
+        abortEarly: false, // Show all errors, not just first one
+        allowUnknown: true, // Allows extra env vars (won't fail)
+      },
     }),
     UsersModule,
     PostsModule,
@@ -82,6 +87,14 @@ const ENV_FILE_PATH = ENV ? `.env.${ENV}.local` : '.env';
     {
       provide: APP_GUARD,
       useClass: AuthenticationGuard, // Global guard that applies authentication to all routes by default.
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ClassSerializerInterceptor, // Global interceptor to handle @Exclude and other class-transformer decorators for all responses.
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: DataResponseInterceptor, // Global interceptor to standardize API responses and exclude sensitive fields.
     },
     AccessTokenGuard, // Register AccessTokenGuard as a provider for dependency injection in AuthenticationGuard and other guards/services that may need it.
   ],

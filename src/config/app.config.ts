@@ -10,6 +10,7 @@ import { registerAs } from '@nestjs/config';
  */
 export default registerAs('appConfig', () => ({
   environment: process.env.NODE_ENV || 'development',
+  apiVersion: process.env.API_VERSION,
   jwt: {
     secret: process.env.JWT_SECRET,
     refreshTokenTtl: parseInt(process.env.JWT_REFRESH_TOKEN_TTL || '86400', 10),
