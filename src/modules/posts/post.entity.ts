@@ -1,5 +1,6 @@
 import {
   Column,
+  CreateDateColumn,
   Entity,
   JoinColumn,
   JoinTable,
@@ -123,6 +124,12 @@ export class Post {
     cascade: true,
   })
   metaValue: MetaOption | null;
+
+  /**
+   * Timestamp when the post record was created.
+   */
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  createdAt: Date;
 
   /**
    * User who authored the post.

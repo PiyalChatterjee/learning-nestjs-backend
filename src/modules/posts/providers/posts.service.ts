@@ -13,7 +13,7 @@ import { PostCreateManyProvider } from './post-create-many.provider';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Post } from '../post.entity';
 import { User } from '../../users/user.entity';
-import { Repository } from 'typeorm';
+import { Between, FindOperator, FindOptionsWhere, ILike, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { formatPostWithAuthor } from '../../../helpers/format-post-with-author.helper';
 import { MetaOption } from '../../meta-options/meta-option.entity';
 import { GetPostsDto } from '../dtos/get-posts.dto';
@@ -22,6 +22,7 @@ import { IPaginated } from '../../../common/paginations/interfaces/paginated.int
 import { TDeleteResult } from '../../../common/types/delete-result.type';
 import { IActiveUser } from '../../auth/interfaces/active-user.interface';
 import { CreatePostProvider, TFormattedPost } from './create-post.provider';
+import { SortOrder } from '../../../common/paginations/enums/sort-order.enum';
 
 /**
  * Manages post data operations.
@@ -59,6 +60,22 @@ export class PostsService {
     getPostsDto: GetPostsDto,
   ): Promise<IPaginated<TFormattedPost>> {
     try {
+      // allowed sortable columns — guards against arbitrary user input reaching ORDER BY
+      const ALLOWED_SORT_FIELDS: (keyof Post)[] = ['id', 'title', 'publishOn', 'status', 'createdAt'];
+      const sortField: keyof Post = (
+        getPostsDto.sortBy && ALLOWED_SORT_FIELDS.includes(getPostsDto.sortBy as keyof Post)
+          ? getPostsDto.sortBy
+          : 'id'
+      ) as keyof Post;
+      const sortDir = getPostsDto.sortOrder === SortOrder.Ascending ? 'ASC' : 'DESC';
+
+      // build combined where clause from all active filters
+      const where: FindOptionsWhere<Post> = {};
+      if (getPostsDto.status) where.status = getPostsDto.status;
+      if (getPostsDto.search) where.title = ILike(`%${getPostsDto.search}%`);
+      const dateWhere = buildDateRangeWhere(getPostsDto.startDate, getPostsDto.endDate);
+      if (dateWhere) where.publishOn = dateWhere.publishOn;
+
       // fetch all posts from the database using pagination provider
       const posts = await this.paginationProvider.paginateQuery(
         {
@@ -67,7 +84,8 @@ export class PostsService {
         },
         this.postRepository,
         {
-          order: { id: 'DESC' },
+          order: { [sortField]: sortDir } as any,
+          ...(Object.keys(where).length ? { where } : {}),
         },
       );
 
@@ -312,4 +330,24 @@ export class PostsService {
       throw error;
     }
   }
+}
+
+/**
+ * Builds a TypeORM where clause for filtering posts by publishOn date range.
+ * Returns undefined when no dates are supplied.
+ */
+function buildDateRangeWhere(
+  startDate?: Date,
+  endDate?: Date,
+): { publishOn: FindOperator<Date> } | undefined {
+  if (startDate && endDate) {
+    return { publishOn: Between(startDate, endDate) };
+  }
+  if (startDate) {
+    return { publishOn: MoreThanOrEqual(startDate) };
+  }
+  if (endDate) {
+    return { publishOn: LessThanOrEqual(endDate) };
+  }
+  return undefined;
 }

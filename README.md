@@ -2,7 +2,7 @@
 
 **Goal:** Structured NestJS backend learning through hands-on implementation of real-world patterns—users, posts, tags, metadata—with focus on persistence, relationships, validation, and reusable architecture.
 
-**Status:** Week 9 in progress. All core CRUD flows for 4 major entities with many-to-many relationships, validated DTOs, full exception handling layer (8 helpers + bulk-operation helper covering 400/401/403/404/408/409/500/503), database relationships modeled (TypeORM entities), API documentation with Swagger, DB outage resilience enabled, **bulk operations with atomic transactions** implemented for high-priority modules (users, posts, tags), **hardened shared pagination applied to all list GET endpoints**, **JWT configuration consolidated to shared config**, **global route protection enabled via AuthenticationGuard (default Bearer, explicit public opt-out via @Auth(AuthType.None))**, and **Google OAuth 2.0 API wrapper integrated** with `GoogleAuthenticationService` for third-party authentication via `POST /v1/auth/google-authentication`.
+**Status:** Week 9 complete. All core CRUD flows for 4 major entities with many-to-many relationships, validated DTOs, full exception handling layer (8 helpers + bulk-operation helper covering 400/401/403/404/408/409/500/503), database relationships modeled (TypeORM entities), API documentation with Swagger (including Bearer auth), DB outage resilience enabled, **bulk operations with atomic transactions** implemented for high-priority modules (users, posts, tags), **hardened shared pagination applied to all list GET endpoints**, **JWT configuration consolidated to shared config**, **global route protection enabled via AuthenticationGuard (default Bearer, explicit public opt-out via @Auth(AuthType.None))**, **Google OAuth 2.0 API wrapper integrated** with `GoogleAuthenticationService` for third-party authentication via `POST /v1/auth/google-authentication`, and **dynamic filtering & sorting on all list endpoints** with full Swagger documentation and Bearer token authentication.
 
 ## Base Structure
 
@@ -170,7 +170,7 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 ### Users
 - `POST /v1/users` - Create user
 - `POST /v1/users/create-many` - Bulk create users (atomic transaction, max 100 per batch)
-- `GET /v1/users?page=1&limit=10` - List users (paginated)
+- `GET /v1/users?sortBy=firstName&sortOrder=asc&search=john&page=1&limit=10` - List users with search, sort, and pagination
 - `GET /v1/users/:id` - Get user by ID
 - `PUT /v1/users/:id` - Replace user
 - `PATCH /v1/users/:id` - Partial update
@@ -179,7 +179,7 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 ### Posts
 - `POST /v1/posts` - Create post with tags and metadata (author derived from JWT token)
 - `POST /v1/posts/create-many` - Bulk create posts (atomic transaction, max 50 per batch; handles tags & authenticated author atomically)
-- `GET /v1/posts?page=1&limit=10` - List posts with author & tag details (paginated)
+- `GET /v1/posts?sortBy=createdAt&sortOrder=desc&status=published&search=nestjs&startDate=2026-01-01&endDate=2026-12-31&page=1&limit=10` - List posts with filters, sort, and pagination
 - `GET /v1/posts/:id` - Get post by ID
 - `PUT /v1/posts/:id` - Full update (replaces tags and metadata)
 - `PATCH /v1/posts/:id` - Partial update (selective tag/metadata updates)
@@ -188,7 +188,7 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 ### Tags
 - `POST /v1/tags` - Create tag
 - `POST /v1/tags/create-many` - Bulk create tags (atomic transaction, max 100 per batch)
-- `GET /v1/tags?page=1&limit=10` - List tags (paginated)
+- `GET /v1/tags?sortBy=name&sortOrder=asc&search=react&page=1&limit=10` - List tags with search, sort, and pagination
 - `GET /v1/tags/:id` - Get tag with associated posts
 - `DELETE /v1/tags/:id` - Soft-delete tag
 
@@ -209,15 +209,17 @@ Migration files auto-save to `src/database/migrations/` and track your schema hi
 | Eager Loading (Tags, Meta) | Reduces N+1 queries in post responses. |
 | JWT-Based Author Lookup | Write operations derive actor identity from verified token claims instead of trusting request body author identifiers. |
 | Server-Side Error Logging | Internal errors logged with context via NestJS Logger; generic message returned to client. |
+| Dynamic Filtering & Sorting | Allowlist validation on sortBy fields prevents SQL injection; TypeORM operators (ILike, Between) provide clean abstraction. |
+| DTO Composition with IntersectionType | Reusable filter/sort/pagination layer across all modules; clean separation of concerns. |
 
-## Next Steps (Post-Week 8)
+## Next Steps (Post-Week 9)
 
 1. **E2E tests for bulk operations** — test success paths, transaction rollback scenarios, and error responses for users/posts/tags bulk endpoints.
 2. Add auth-focused tests for global guard defaults and explicit public-route opt-outs.
 3. Write unit tests for new bulk provider patterns and transaction semantics.
 4. Write integration tests for post-tags-metadata workflows with bulk operations.
 5. Extend bulk operations pattern to meta-options module (optional).
-6. Add filtering and sorting to list endpoints (pagination already hardened and reusable).
+6. **E2E tests for filtering & sorting** — validate all query parameter combinations, edge cases, and error handling on list endpoints.
 7. **Migrate to explicit TypeORM migrations** (infrastructure ready in `src/database/data-source.ts`; switch `synchronize: false` when ready; see "Database & Migrations" section).
 8. Explore Docker setup for containerized local development.
 9. Add health endpoints that separate API liveness from DB readiness.

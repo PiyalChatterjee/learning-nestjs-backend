@@ -6,6 +6,10 @@ import { User } from '../user.entity';
 import profileConfig from '../config/profile.config';
 import { UserCreateManyProvider } from './user-create-many.provider';
 import { PaginationProvider } from '../../../common/paginations/provider/pagination.provider';
+import { CreateUserProvider } from './create-user.provider';
+import { FindOneUserByEmailProvider } from './find-one-user-by-email.provider';
+import { FindOneByGoogleIdProvider } from './find-one-by-google-id.provider';
+import { CreateGoogleUserProvider } from './create-google-user.provider';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -16,7 +20,7 @@ describe('UsersService', () => {
         UsersService,
         {
           provide: AuthService,
-          useValue: {},
+          useValue: { isAuthenticated: jest.fn().mockReturnValue(true) },
         },
         {
           provide: getRepositoryToken(User),
@@ -32,6 +36,22 @@ describe('UsersService', () => {
         },
         {
           provide: PaginationProvider,
+          useValue: {},
+        },
+        {
+          provide: CreateUserProvider,
+          useValue: {},
+        },
+        {
+          provide: FindOneUserByEmailProvider,
+          useValue: {},
+        },
+        {
+          provide: FindOneByGoogleIdProvider,
+          useValue: {},
+        },
+        {
+          provide: CreateGoogleUserProvider,
           useValue: {},
         },
       ],

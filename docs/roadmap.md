@@ -4,7 +4,7 @@
 
 Build a course-aligned backend in small learning increments, with proof of implementation and a clear next-step backlog.
 
-## Current Snapshot (2026-06-05)
+## Current Snapshot (2026-06-06)
 
 - Core app bootstrap is in place with versioned routing and validation.
 - Users module has full controller-level CRUD-style routes with DTO validation and TypeORM repository-backed service methods.
@@ -54,6 +54,22 @@ Build a course-aligned backend in small learning increments, with proof of imple
 	- `PaginationProvider` and `IPaginated<T>` standardize list response metadata and navigation links
 	- Hardened behavior now includes max limit cap, deterministic default ordering, query-preserving links, and empty-result-safe pagination metadata
 	- Architecture discussion notes are captured in `docs/learning-issues.md` under "Pagination Architecture Review (Discussion Summary)"
+- **Dynamic Filtering and Sorting implemented** on all three list endpoints:
+	- `GET /v1/posts?sortBy=createdAt&sortOrder=asc&status=published&search=nestjs&startDate=2026-01-01&endDate=2026-12-31`
+	- `GET /v1/users?sortBy=firstName&sortOrder=desc&search=john`
+	- `GET /v1/tags?sortBy=name&sortOrder=asc&search=react`
+	- `SortQueryDto` and module-specific filter DTOs composed via `IntersectionType`
+	- Posts: date range filters (startDate/endDate), status filter, title search
+	- Users: firstName search
+	- Tags: name search
+	- Allowlist validation on sortBy to prevent SQL injection
+	- Case-insensitive partial matching via TypeORM ILike operator
+- **Swagger Bearer Authentication configured**:
+	- DocumentBuilder configured with `.addBearerAuth()` in bootstrap
+	- All protected controllers decorated with `@ApiBearerAuth('access-token')`
+	- Swagger UI now displays "Authorize" button for JWT token entry
+	- All protected endpoints automatically documented as requiring Bearer token
+- **Full Swagger documentation** with @ApiPropertyOptional decorators on all filter, sort, and pagination query parameters
 
 ## Week-by-Week Status
 

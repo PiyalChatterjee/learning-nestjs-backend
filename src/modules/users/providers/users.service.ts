@@ -17,14 +17,15 @@ import {
 } from '../../../common/exceptions/bad-request.helper';
 import { throwIfServiceUnavailable } from '../../../common/exceptions/service-unavailable.helper';
 import { throwIfUnexpectedError } from '../../../common/exceptions/internal-error.helper';
-import { Repository } from 'typeorm';
+import { Repository, ILike, FindOptionsWhere } from 'typeorm';
 import { User } from '../user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import profileConfig from '../config/profile.config';
 import { ConfigType } from '@nestjs/config';
 import { UserCreateManyProvider } from './user-create-many.provider';
 import { CreateManyUsersDto } from '../dtos/create-many-users.dto';
-import { PaginationQueryDto } from '../../../common/paginations/dtos/pagination-query.dto';
+import { GetUsersDto } from '../dtos/get-users.dto';
+import { SortOrder } from '../../../common/paginations/enums/sort-order.enum';
 import { PaginationProvider } from '../../../common/paginations/provider/pagination.provider';
 import { IPaginated } from '../../../common/paginations/interfaces/paginated.interface';
 import { TDeleteResult } from '../../../common/types/delete-result.type';
@@ -127,7 +128,7 @@ export class UsersService {
    * Returns a paginated list of users.
    */
   public async getAllUsers(
-    paginationQuery: PaginationQueryDto,
+    getUsersDto: GetUsersDto,
   ): Promise<IPaginated<TUserSummary>> {
     try {
       // verify the caller is authenticated
@@ -136,15 +137,32 @@ export class UsersService {
         throw new Error('Unauthorized');
       }
 
+      // allowed sortable columns — guards against arbitrary user input reaching ORDER BY
+      const ALLOWED_SORT_FIELDS: (keyof import('../user.entity').User)[] = ['id', 'firstName', 'lastName', 'email'];
+      const sortField = (
+        getUsersDto.sortBy && ALLOWED_SORT_FIELDS.includes(getUsersDto.sortBy as any)
+          ? getUsersDto.sortBy
+          : 'id'
+      );
+      const sortDir = getUsersDto.sortOrder === SortOrder.Ascending ? 'ASC' : 'DESC';
+
+      // build optional search filter on name or email
+      const where: FindOptionsWhere<User> | undefined = getUsersDto.search
+        ? {
+            firstName: ILike(`%${getUsersDto.search}%`),
+          }
+        : undefined;
+
       // paginate users through the shared pagination provider
       const users = await this.paginationProvider.paginateQuery(
         {
-          page: paginationQuery.page || 1,
-          limit: paginationQuery.limit || 10,
+          page: getUsersDto.page || 1,
+          limit: getUsersDto.limit || 10,
         },
         this.userRepository,
         {
-          order: { id: 'DESC' },
+          order: { [sortField]: sortDir } as any,
+          ...(where ? { where } : {}),
         },
       );
 

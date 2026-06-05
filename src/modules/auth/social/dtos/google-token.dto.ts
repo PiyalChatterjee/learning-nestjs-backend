@@ -1,8 +1,12 @@
-import { IsNotEmpty, IsString } from "class-validator";
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class GoogleTokenDto {
-    @IsNotEmpty()
-    @IsString()
-    token: string;
+  @ApiProperty({
+    description: 'Google OAuth token obtained from the client',
+    example: '<token>',
+  })
+  @IsNotEmpty()
+  @IsString()
+  token: string;
 }
- 

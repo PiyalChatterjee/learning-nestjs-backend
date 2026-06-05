@@ -6,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Post } from '../posts/post.entity';
+import { Exclude } from 'class-transformer';
 
 /**
  * User persistence model mapped to the users table.
@@ -70,6 +71,7 @@ export class User {
     name: 'password',
     nullable: true,
   })
+  @Exclude() // Exclude password from serialization to prevent exposure in API responses
   password?: string;
   
   /**   * Optional Google ID for users authenticated via Google OAuth.
@@ -81,6 +83,7 @@ export class User {
     name: 'google_id',
     nullable: true,
   })
+  @Exclude() // Exclude Google ID from serialization to prevent exposure in API responses
   googleId?: string;
 
   @OneToMany(() => Post, (post) => post.author)

@@ -1,5 +1,6 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
@@ -10,14 +11,15 @@ import {
   Put,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { PatchUserDto } from './dtos/patch-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { UsersService } from './providers/users.service';
-import { ApiQuery, ApiTags, ApiBody, ApiParam, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiQuery, ApiTags, ApiBody, ApiParam, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CreateManyUsersDto } from './dtos/create-many-users.dto';
-import { PaginationQueryDto } from '../../common/paginations/dtos/pagination-query.dto';
+import { GetUsersDto } from './dtos/get-users.dto';
 import { AccessTokenGuard } from '../auth/guards/access-token.guard';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { AuthType } from '../auth/enums/auth-type.enum';
@@ -25,6 +27,7 @@ import { AuthType } from '../auth/enums/auth-type.enum';
 /**
  * Exposes user management endpoints.
  */
+@ApiBearerAuth('access-token')
 @Controller('users')
 export class UsersController {
   // Inject UsersService to handle business logic
@@ -96,8 +99,8 @@ export class UsersController {
     type: Number,
     description: 'Page number to return',
   })
-  public getAllUsers(@Query() paginationQuery: PaginationQueryDto) {
-    return this.usersService.getAllUsers(paginationQuery);
+  public getAllUsers(@Query() getUsersDto: GetUsersDto) {
+    return this.usersService.getAllUsers(getUsersDto);
   }
 
   /**
@@ -123,6 +126,8 @@ export class UsersController {
    * Creates a new user.
    */
   @Post()
+  @Auth(AuthType.None) // No authentication required for user creation
+  @UseInterceptors(ClassSerializerInterceptor) // Ensure response is properly serialized
   @ApiOperation({ summary: 'Create a new user' })
   @ApiResponse({ status: 201, description: 'Successfully created a new user' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserCreateManyProvider } from './user-create-many.provider';
 import { DataSource } from 'typeorm';
+import { HashingProvider } from '../../auth/providers/hashing.provider';
 
 describe('UserCreateManyProvider', () => {
   let provider: UserCreateManyProvider;
@@ -12,6 +13,10 @@ describe('UserCreateManyProvider', () => {
         {
           provide: DataSource,
           useValue: {},
+        },
+        {
+          provide: HashingProvider,
+          useValue: { hashPassword: jest.fn() },
         },
       ],
     }).compile();

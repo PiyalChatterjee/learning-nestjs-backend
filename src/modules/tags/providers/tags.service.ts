@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Tag } from '../tag.entity';
 import { Post } from '../../posts/post.entity';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 import { PostTagDto } from '../dtos/post-tag.dto';
 import { CreateManyTagsDto } from '../dtos/create-many-tags.dto';
 import { TagCreateManyProvider } from './tag-create-many.provider';
@@ -11,6 +11,8 @@ import { throwIfRequestTimeout } from '../../../common/exceptions/request-timeou
 import { throwIfServiceUnavailable } from '../../../common/exceptions/service-unavailable.helper';
 import { throwIfUnexpectedError } from '../../../common/exceptions/internal-error.helper';
 import { PaginationQueryDto } from '../../../common/paginations/dtos/pagination-query.dto';
+import { GetTagsDto } from '../dtos/get-tags.dto';
+import { SortOrder } from '../../../common/paginations/enums/sort-order.enum';
 import { PaginationProvider } from '../../../common/paginations/provider/pagination.provider';
 import { IPaginated } from '../../../common/paginations/interfaces/paginated.interface';
 import { TDeleteResult } from '../../../common/types/delete-result.type';
@@ -88,17 +90,34 @@ export class TagsService {
     /**
      * Returns all tags from storage.
      */
-    public async getAllTags(paginationQuery: PaginationQueryDto): Promise<IPaginated<Tag>> {
+    public async getAllTags(getTagsDto: GetTagsDto): Promise<IPaginated<Tag>> {
         try {
+            // allowed sortable columns — guards against arbitrary user input reaching ORDER BY
+            const ALLOWED_SORT_FIELDS: (keyof Tag)[] = ['id', 'name', 'slug'];
+            const sortField = (
+                getTagsDto.sortBy && ALLOWED_SORT_FIELDS.includes(getTagsDto.sortBy as keyof Tag)
+                    ? getTagsDto.sortBy
+                    : 'id'
+            );
+            const sortDir = getTagsDto.sortOrder === SortOrder.Ascending ? 'ASC' : 'DESC';
+
+            // build optional search filter on name or slug
+            const where: FindOptionsWhere<Tag> | undefined = getTagsDto.search
+                ? {
+                    name: ILike(`%${getTagsDto.search}%`),
+                  }
+                : undefined;
+
             // Fetch tags from the database through shared pagination provider.
             return this.paginationProvider.paginateQuery(
                 {
-                    page: paginationQuery.page || 1,
-                    limit: paginationQuery.limit || 10,
+                    page: getTagsDto.page || 1,
+                    limit: getTagsDto.limit || 10,
                 },
                 this.tagRepository,
                 {
-                    order: { id: 'DESC' },
+                    order: { [sortField]: sortDir } as any,
+                    ...(where ? { where } : {}),
                 },
             );
         } catch (error) {

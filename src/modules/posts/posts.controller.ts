@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { PostsService } from './providers/posts.service';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiParam,
@@ -29,6 +30,7 @@ import { IActiveUser } from '../auth/interfaces/active-user.interface';
 /**
  * Handles HTTP routes for post retrieval and mutation.
  */
+@ApiBearerAuth('access-token')
 @Controller('posts')
 export class PostsController {
   /**

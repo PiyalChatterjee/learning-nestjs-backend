@@ -11,14 +11,16 @@ import {
 import { TagsService } from './providers/tags.service';
 import { PostTagDto } from './dtos/post-tag.dto';
 import { CreateManyTagsDto } from './dtos/create-many-tags.dto';
-import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { formatTag } from '../../helpers/format-tag.helper';
 import { formatPostSummary } from '../../helpers/format-post-summary.helper';
 import { PaginationQueryDto } from '../../common/paginations/dtos/pagination-query.dto';
+import { GetTagsDto } from './dtos/get-tags.dto';
 
 /**
  * Handles HTTP operations for tags.
  */
+@ApiBearerAuth('access-token')
 @Controller('tags')
 export class TagsController {
   constructor(
@@ -62,8 +64,8 @@ export class TagsController {
    * Returns all tags in formatted output shape.
    */
   @Get()
-  public async getAllTags(@Query() paginationQuery: PaginationQueryDto) {
-    const tags = await this.tagsService.getAllTags(paginationQuery);
+  public async getAllTags(@Query() getTagsDto: GetTagsDto) {
+    const tags = await this.tagsService.getAllTags(getTagsDto);
     return {
       ...tags,
       data: tags.data.map(formatTag),

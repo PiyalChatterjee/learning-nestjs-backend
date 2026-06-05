@@ -2,3 +2,8 @@ GET http://localhost:8000/v1/posts?limit=1&page=2
 
 
 GET http://localhost:8000/v1/posts/12
+
+
+GET http://localhost:8000/v1/posts/?limit=10&page=1&sortBy=createdAt&sortOrder=desc&status=draft&search=nestjs
+Content-Type: application/json
+Authorization: Bearer <access_token>
