@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { GoogleAuthenticationService } from './providers/google-authentication.service';
 import { GoogleTokenDto } from './dtos/google-token.dto';
 import { Auth } from '../decorators/auth.decorator';
@@ -12,6 +12,7 @@ export class GoogleAuthenticationController {
 
   @Auth(AuthType.None)
   @Post()
+  @HttpCode(HttpStatus.OK)
   public async authenticate(@Body() googleTokenDto: GoogleTokenDto) {
     // This method will be implemented to handle the authentication flow.
     // It will receive the Google token from the client, call the service to authenticate,

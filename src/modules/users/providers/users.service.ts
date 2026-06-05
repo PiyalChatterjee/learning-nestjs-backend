@@ -3,6 +3,7 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
@@ -33,6 +34,7 @@ import { FindOneUserByEmailProvider } from './find-one-user-by-email.provider';
 import { FindOneByGoogleIdProvider } from './find-one-by-google-id.provider';
 import { IGoogleUser } from '../interfaces/google-user.interface';
 import { CreateGoogleUserProvider } from './create-google-user.provider';
+import { throwIfUnauthorized } from '../../../common/exceptions/unauthorized.helper';
 
 /**
  * Internal representation of persisted user data.
@@ -399,6 +401,34 @@ export class UsersService {
   }
 
   /**
+   * Finds a user by internal numeric id.
+   *
+   * @param id - The user id from JWT subject claim.
+   * @returns The persisted user entity if found, otherwise null.
+   */
+  public async findOneById(id: number): Promise<User | null> {
+    try {
+      return await this.userRepository.findOne({ where: { id } });
+    } catch (error) {
+      throwIfServiceUnavailable(error, {
+        message: 'Cannot fetch user at this moment',
+        serviceName: 'database',
+        shouldLog: true,
+      });
+      throwIfRequestTimeout(error, {
+        message: 'Failed to fetch user',
+        context: 'database query',
+      });
+      throwIfUnexpectedError(error, {
+        userMessage: 'Failed to fetch user',
+        context: 'user-find-by-id',
+        originalError: error,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Finds a user by Google OAuth ID.
    * Used during Google OAuth authentication flow to check if user already exists.
    *
@@ -446,6 +476,54 @@ export class UsersService {
       throwIfUnexpectedError(error, {
         userMessage: 'Failed to create Google user',
         context: 'user-create-google',
+        originalError: error,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Links a Google account id to an existing user.
+   *
+   * @param userId - Internal user id to link.
+   * @param googleId - Google subject claim to attach to this user.
+   * @returns The updated user with linked googleId.
+   */
+  public async linkGoogleAccount(userId: number, googleId: string): Promise<User> {
+    try {
+      const user = assertResourceExists(
+        await this.userRepository.findOne({ where: { id: userId } }),
+        'User',
+        userId,
+      );
+
+      const existingGoogleUser = await this.userRepository.findOne({
+        where: { googleId },
+      });
+
+      if (existingGoogleUser && existingGoogleUser.id !== userId) {
+        throwIfUnauthorized(new UnauthorizedException(), {
+          message: 'Google account is already linked to another user',
+          context: 'user-link-google-account',
+        });
+      }
+
+      user.googleId = googleId;
+
+      return await this.userRepository.save(user);
+    } catch (error) {
+      throwIfServiceUnavailable(error, {
+        message: 'Cannot link Google account at this moment',
+        serviceName: 'database',
+        shouldLog: true,
+      });
+      throwIfRequestTimeout(error, {
+        message: 'Failed to link Google account',
+        context: 'database query',
+      });
+      throwIfUnexpectedError(error, {
+        userMessage: 'Failed to link Google account',
+        context: 'user-link-google-account',
         originalError: error,
       });
       throw error;

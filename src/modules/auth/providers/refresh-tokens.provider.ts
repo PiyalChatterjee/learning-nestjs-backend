@@ -8,14 +8,13 @@ import { RefreshTokenDto } from '../dtos/refresh-token.dto';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { GenerateTokensProvider } from './generate-tokens.provider';
-import { FindOneUserByEmailProvider } from '../../users/providers/find-one-user-by-email.provider';
+import { UsersService } from '../../users/providers/users.service';
 import { throwIfUnauthorized } from '../../../common/exceptions/unauthorized.helper';
-import { IActiveUser } from '../interfaces/active-user.interface';
 
 /**
  * Provider responsible for validating refresh tokens and issuing new access/refresh token pairs.
  *
- * Validates the incoming refresh token JWT, looks up the associated user by email,
+ * Validates the incoming refresh token JWT, looks up the associated user by subject,
  * and delegates new token generation to {@link GenerateTokensProvider}.
  *
  * @class RefreshTokensProvider
@@ -25,16 +24,16 @@ export class RefreshTokensProvider {
   /**
    * Initializes the RefreshTokensProvider with required dependencies.
    *
-   * @param {FindOneUserByEmailProvider} findOneUserByEmailProvider - Looks up a user by the email
-   *   claim extracted from the verified refresh token.
+  * @param {UsersService} usersService - Looks up a user by the subject (`sub`) claim
+  *   extracted from the verified refresh token.
    * @param {JwtService} jwtService - Verifies the incoming refresh token JWT.
    * @param {ConfigService} configService - Provides JWT secret, audience, and issuer from app config.
    * @param {GenerateTokensProvider} generateTokensProvider - Issues a new access/refresh token pair
    *   once the user is confirmed.
    */
   constructor(
-    @Inject(forwardRef(() => FindOneUserByEmailProvider))
-    private readonly findOneUserByEmailProvider: FindOneUserByEmailProvider,
+    @Inject(forwardRef(() => UsersService))
+    private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
 
     private readonly configService: ConfigService,
@@ -46,8 +45,8 @@ export class RefreshTokensProvider {
    *
    * Flow:
    * 1. Verifies the refresh token JWT signature, audience, and issuer.
-   * 2. Extracts the `email` claim from the token payload.
-   * 3. Looks up the user by email; throws {@link UnauthorizedException} if not found.
+  * 2. Extracts the `sub` claim from the token payload.
+  * 3. Looks up the user by id; throws {@link UnauthorizedException} if not found.
    * 4. Generates and returns a new token pair via {@link GenerateTokensProvider}.
    *
    * @param {RefreshTokenDto} refreshToken - DTO containing the refresh token string to validate.
@@ -61,9 +60,9 @@ export class RefreshTokensProvider {
    */
   public async refreshTokens(refreshToken: RefreshTokenDto) {
     try {
-      const { email } = await this.jwtService.verifyAsync<
-        Pick<IActiveUser, 'email'>
-      >(refreshToken.refreshToken, {
+      const { sub } = await this.jwtService.verifyAsync<Pick<{ sub: number }, 'sub'>>(
+        refreshToken.refreshToken,
+        {
         secret: this.configService.get<string>('appConfig.jwt.secret'),
         audience: this.configService.get<string>(
           'appConfig.jwt.signOptions.audience',
@@ -71,8 +70,9 @@ export class RefreshTokensProvider {
         issuer: this.configService.get<string>(
           'appConfig.jwt.signOptions.issuer',
         ),
-      });
-      const user = await this.findOneUserByEmailProvider.findOneByEmail(email);
+        },
+      );
+      const user = await this.usersService.findOneById(sub);
       if (!user) {
         throwIfUnauthorized(new UnauthorizedException(), {
           message: 'Invalid refresh token',

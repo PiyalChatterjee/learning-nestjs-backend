@@ -83,24 +83,53 @@ export class GoogleAuthenticationService {
       const {
         sub: googleId,
         email,
+        email_verified: emailVerified,
         given_name: firstName,
         family_name: lastName,
       } = payload;
 
-      const user = await this.usersService.findOneByGoogleId(googleId);
-
-      if (!user) {
-        // If user does not exist, create a new user record
-        const newUser = await this.usersService.createGoogleUser({
-          email,
-          firstName,
-          lastName,
-          googleId,
-        });
-        return await this.generateTokensProvider.generateTokens(newUser);
+      if (!email || !emailVerified) {
+        throw new UnauthorizedException(
+          'Invalid Google ID token (missing or unverified email)',
+        );
       }
 
-      return await this.generateTokensProvider.generateTokens(user);
+      const user = await this.usersService.findOneByGoogleId(googleId);
+
+      if (user) {
+        return await this.generateTokensProvider.generateTokens(user);
+      }
+
+      const existingEmailUser = await this.usersService.findOneByEmail(email);
+
+      if (existingEmailUser) {
+        if (
+          existingEmailUser.googleId &&
+          existingEmailUser.googleId !== googleId
+        ) {
+          throw new UnauthorizedException(
+            'Google account is already linked to another user',
+          );
+        }
+
+        const linkedUser = existingEmailUser.googleId
+          ? existingEmailUser
+          : await this.usersService.linkGoogleAccount(
+              existingEmailUser.id,
+              googleId,
+            );
+
+        return await this.generateTokensProvider.generateTokens(linkedUser);
+      }
+
+      // If user does not exist, create a new user record
+      const newUser = await this.usersService.createGoogleUser({
+        email,
+        firstName,
+        lastName,
+        googleId,
+      });
+      return await this.generateTokensProvider.generateTokens(newUser);
     } catch (error) {
       throwIfRequestTimeout(error, {
         message: 'Google authentication request timed out',

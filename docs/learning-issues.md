@@ -61,6 +61,35 @@ Capture the following fields every time:
 - Verification Result
 - Lesson/Topic Context
 
+## 2026-06-05 - Google Auth Endpoint Returned 201 Instead of 200 OK
+
+### Symptom
+- `POST /v1/auth/google-authentication` returned `HTTP 201 Created` while `POST /v1/auth/sign-in` and `POST /v1/auth/refresh-token` returned `HTTP 200 OK`.
+- Inconsistent status codes across auth endpoints.
+
+### Root Cause
+- [src/modules/auth/social/google-authentication.controller.ts](src/modules/auth/social/google-authentication.controller.ts) was missing `@HttpCode(HttpStatus.OK)` decorator.
+- Without explicit decoration, NestJS defaults to 201 for POST responses.
+
+### Change Made
+- Updated [src/modules/auth/social/google-authentication.controller.ts](src/modules/auth/social/google-authentication.controller.ts):
+  - Added `HttpCode` and `HttpStatus` to imports from `@nestjs/common`.
+  - Added `@HttpCode(HttpStatus.OK)` decorator to the `authenticate` method.
+
+### Verification Result
+- TypeScript diagnostics: no errors on modified file.
+- `npm test -- auth.controller.spec.ts --runInBand`: 1 passed (sign-in/refresh-token both confirmed 200 OK).
+
+### Lesson/Topic Context
+- **OAuth endpoints return 200 OK** (industry standard: Google, Auth0, Firebase, AWS Cognito, GitHub, GitLab all use 200).
+- Status code semantics:
+  - **200 OK**: Your request succeeded + here's the data (tokens)
+  - **201 Created**: I created a resource you requested (not the case for OAuth)
+- User creation in OAuth is an **implementation detail**, not the primary result; client asked for auth, not resource creation.
+- OAuth endpoints don't expose whether a user is new or returning—this maintains **opacity** and allows changes to provisioning logic without breaking clients.
+- If you want to signal new user to the client, add a response field (`isNewUser: true` in response DTO), not a status code change.
+- This approach ensures consistency: all auth endpoints (sign-in, refresh, social) return 200 OK.
+
 ## Issue Template
 
 ```md
@@ -81,6 +110,70 @@ Capture the following fields every time:
 ### Lesson/Topic Context
 -
 ```
+
+---
+
+## 2026-06-05 - Google Auto-Provision Could Duplicate Existing Email Accounts
+
+### Symptom
+- First Google sign-in could create a new user even when an email-matching local account already existed.
+- This risked duplicate provisioning and account identity fragmentation.
+
+### Root Cause
+- Google auth flow only checked by `googleId` before creating a new user.
+- There was no guard rail to:
+  - require verified Google email
+  - link existing email account instead of creating a duplicate
+
+### Change Made
+- Updated [src/modules/auth/social/providers/google-authentication.service.ts](src/modules/auth/social/providers/google-authentication.service.ts#L1):
+  - require `email` and `email_verified` in Google token payload
+  - check user by `googleId` first
+  - if no `googleId` match, check by email and link Google account when appropriate
+  - reject token when email account is already linked to a different Google account
+  - create new Google user only when both lookups miss
+- Updated [src/modules/users/providers/users.service.ts](src/modules/users/providers/users.service.ts#L1):
+  - added `linkGoogleAccount(userId, googleId)` to attach Google identity safely.
+- Updated [src/modules/auth/social/providers/google-authentication.service.spec.ts](src/modules/auth/social/providers/google-authentication.service.spec.ts#L1):
+  - added tests for existing Google user, linking existing email user, auto-provision branch, and unverified-email rejection.
+
+### Verification
+- Ran `npm test -- google-authentication.service.spec.ts --runInBand`.
+- Result: 1 suite passed, 5 tests passed.
+
+### Lesson/Topic Context
+- Social login should use a merge-safe decision tree: `googleId -> email -> create`.
+- Verified email checks are a required trust boundary before account linking or provisioning.
+
+---
+
+## 2026-06-05 - Refresh Token Payload Mismatch Broke Token Rotation
+
+### Symptom
+- Refresh-token flow could fail with `Invalid refresh token` even when tokens were newly issued and unexpired.
+
+### Root Cause
+- `GenerateTokensProvider` issued refresh tokens without an `email` claim.
+- `RefreshTokensProvider` attempted to read `email` from refresh token payload and looked up users by email.
+- This claim mismatch made refresh validation logic inconsistent with token generation.
+
+### Change Made
+- Updated [src/modules/auth/providers/refresh-tokens.provider.ts](src/modules/auth/providers/refresh-tokens.provider.ts#L1):
+  - verify refresh token payload using `sub` (user id) instead of `email`
+  - fetch user via `UsersService.findOneById(sub)`
+- Updated [src/modules/users/providers/users.service.ts](src/modules/users/providers/users.service.ts#L1):
+  - added `findOneById(id: number): Promise<User | null>` for auth refresh lookup.
+- Updated [src/modules/auth/providers/refresh-tokens.provider.spec.ts](src/modules/auth/providers/refresh-tokens.provider.spec.ts#L1):
+  - added dependency mocks
+  - added behavior tests for successful subject-based refresh and missing-user failure.
+
+### Verification
+- Ran `npm test -- refresh-tokens.provider.spec.ts --runInBand`.
+- Result: 1 suite passed, 3 tests passed.
+
+### Lesson/Topic Context
+- Refresh tokens should rely on stable identity claims (`sub`) rather than optional profile claims.
+- Token generation and token verification must agree exactly on payload contract.
 
 ---
 
