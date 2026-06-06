@@ -2,6 +2,10 @@ import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { SortOrder } from '../enums/sort-order.enum';
 import { ApiProperty } from '@nestjs/swagger';
 
+/**
+ * Sorting query parameters for list endpoints.
+ * Allows clients to specify sort field and sort direction.
+ */
 export class SortQueryDto {
   /**
    * Field to sort by.

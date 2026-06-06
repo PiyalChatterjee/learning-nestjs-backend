@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UploadsController } from './uploads.controller';
 import { UploadsService } from './providers/uploads.service';
 import { Upload } from './upload.entity';
+import { UploadToAzureProvider } from './providers/upload-to-azure.provider';
+import { UploadMetadataProvider } from './providers/upload-metadata.provider';
 
 /**
  * Uploads feature module that provides file upload functionality.
@@ -10,7 +12,7 @@ import { Upload } from './upload.entity';
  */
 @Module({
   controllers: [UploadsController],
-  providers: [UploadsService],
+  providers: [UploadsService, UploadToAzureProvider, UploadMetadataProvider],
   imports: [TypeOrmModule.forFeature([Upload])],
   exports: [UploadsService],
 })

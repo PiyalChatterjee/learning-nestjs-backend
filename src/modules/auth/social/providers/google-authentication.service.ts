@@ -52,6 +52,16 @@ export class GoogleAuthenticationService {
     this.oauth2Client = new OAuth2Client(clientId, clientSecret);
   }
 
+  /**
+   * Authenticates a user with a Google ID token.
+   * Verifies the token, looks up or creates the user, and returns JWT tokens.
+   * Handles linking of Google accounts to existing email users.
+   * @param googleTokenDto - DTO containing the Google ID token to verify
+   * @returns Generated JWT access and refresh tokens for authenticated user
+   * @throws UnauthorizedException if token is invalid or email verification fails
+   * @throws RequestTimeoutException if Google API times out
+   * @throws ServiceUnavailableException if Google service is unavailable
+   */
   public async authenticate(googleTokenDto: GoogleTokenDto) {
     try {
       // Defensive guard for edge cases where lifecycle init does not run as expected.

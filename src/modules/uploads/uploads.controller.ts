@@ -9,16 +9,8 @@ import {
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { UploadsService } from './providers/uploads.service';
 import { UploadFileDto } from './dtos/upload-file.dto';
-
-/**
- * Interface representing an uploaded file from Multer.
- */
-interface IUploadFile {
-  buffer: Buffer;
-  originalname: string;
-  mimetype: string;
-  size: number;
-}
+import { IUploadFile } from './interfaces/upload-file.interface';
+import { ApiHeaders, ApiOperation } from '@nestjs/swagger';
 
 /**
  * Controller for handling file uploads.
@@ -45,7 +37,20 @@ export class UploadsController {
    */
   @Post('file')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(@UploadedFile() file: IUploadFile): Promise<UploadFileDto> {
+  @ApiHeaders([
+    {
+      name: 'Content-Type',
+      description: 'Must be multipart/form-data for file uploads',
+    },
+    {
+      name: 'Authorization',
+      description: 'Bearer access token for authentication',
+    },
+  ])
+  @ApiOperation({ summary: 'Upload a single file' })
+  public async uploadFile(
+    @UploadedFile() file: IUploadFile,
+  ): Promise<UploadFileDto> {
     if (!file) {
       throw new BadRequestException('No file provided');
     }
@@ -65,7 +70,18 @@ export class UploadsController {
    */
   @Post('files')
   @UseInterceptors(FilesInterceptor('files'))
-  async uploadFiles(
+  @ApiHeaders([
+    {
+      name: 'Content-Type',
+      description: 'Must be multipart/form-data for file uploads',
+    },
+    {
+      name: 'Authorization',
+      description: 'Bearer access token for authentication',
+    },
+  ])
+  @ApiOperation({ summary: 'Upload multiple files' })
+  public async uploadFiles(
     @UploadedFiles() files: IUploadFile[],
   ): Promise<UploadFileDto[]> {
     if (!files || files.length === 0) {

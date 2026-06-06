@@ -33,6 +33,10 @@ export class MetaOption {
   @UpdateDateColumn()
   updateDate: Date;
 
+  /**
+   * Reference to the associated Post entity.
+   * One-to-one relationship with cascade delete.
+   */
   @OneToOne(() => Post, (post) => post.metaValue, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'post_id' })
   post: Post;
