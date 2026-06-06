@@ -6,8 +6,6 @@ import {
   UploadedFiles,
   BadRequestException,
 } from '@nestjs/common';
-import { Auth } from '../auth/decorators/auth.decorator';
-import { AuthType } from '../auth/enums/auth-type.enum';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { UploadsService } from './providers/uploads.service';
 import { UploadFileDto } from './dtos/upload-file.dto';
@@ -45,7 +43,6 @@ export class UploadsController {
    * Content-Type: multipart/form-data
    * file: <binary file data>
    */
-  @Auth(AuthType.None)
   @Post('file')
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(@UploadedFile() file: IUploadFile): Promise<UploadFileDto> {
@@ -66,10 +63,11 @@ export class UploadsController {
    * Content-Type: multipart/form-data
    * files: <binary file data>, <binary file data>, ...
    */
-  @Auth(AuthType.None)
   @Post('files')
   @UseInterceptors(FilesInterceptor('files'))
-  async uploadFiles(@UploadedFiles() files: IUploadFile[]): Promise<UploadFileDto[]> {
+  async uploadFiles(
+    @UploadedFiles() files: IUploadFile[],
+  ): Promise<UploadFileDto[]> {
     if (!files || files.length === 0) {
       throw new BadRequestException('No files provided');
     }
