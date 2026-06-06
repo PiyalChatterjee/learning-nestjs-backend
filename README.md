@@ -2,7 +2,7 @@
 
 **Goal:** Structured NestJS backend learning through hands-on implementation of real-world patterns—users, posts, tags, metadata—with focus on persistence, relationships, validation, and reusable architecture.
 
-**Status:** Week 9 complete. All core CRUD flows for 4 major entities with many-to-many relationships, validated DTOs, full exception handling layer (8 helpers + bulk-operation helper covering 400/401/403/404/408/409/500/503), database relationships modeled (TypeORM entities), API documentation with Swagger (including Bearer auth), DB outage resilience enabled, **bulk operations with atomic transactions** implemented for high-priority modules (users, posts, tags), **hardened shared pagination applied to all list GET endpoints**, **JWT configuration consolidated to shared config**, **global route protection enabled via AuthenticationGuard (default Bearer, explicit public opt-out via @Auth(AuthType.None))**, **Google OAuth 2.0 API wrapper integrated** with `GoogleAuthenticationService` for third-party authentication via `POST /v1/auth/google-authentication`, **dynamic filtering & sorting on all list endpoints** with full Swagger documentation and Bearer token authentication, **complete request lifecycle implemented** with global exception filter for error response shaping and `@nestjs/throttler` for rate limiting (100 req/60s per IP).
+**Status:** Week 10 in progress. All core CRUD flows for 4 major entities with many-to-many relationships, validated DTOs, full exception handling layer (8 helpers + bulk-operation helper covering 400/401/403/404/408/409/500/503), database relationships modeled (TypeORM entities), API documentation with Swagger (including Bearer auth), DB outage resilience enabled, **bulk operations with atomic transactions** implemented for high-priority modules (users, posts, tags), **hardened shared pagination applied to all list GET endpoints**, **JWT configuration consolidated to shared config**, **global route protection enabled via AuthenticationGuard (default Bearer, explicit public opt-out via @Auth(AuthType.None))**, **Google OAuth 2.0 API wrapper integrated** with `GoogleAuthenticationService` for third-party authentication via `POST /v1/auth/google-authentication`, **dynamic filtering & sorting on all list endpoints** with full Swagger documentation and Bearer token authentication, **complete request lifecycle implemented** with global exception filter for error response shaping and `@nestjs/throttler` for rate limiting (100 req/60s per IP), **file uploads with Azure Blob Storage + Front Door CDN**, **mail module with EJS template rendering and SMTP transport** with welcome emails sent on user registration.
 
 ## Base Structure
 
@@ -10,6 +10,9 @@
 - `src/modules/posts` - Blog post CRUD with repository persistence, validated DTOs, author ownership, tag resolution, and metadata nesting.
 - `src/modules/tags` - Tag create/list with many-to-many relation to posts via `post_tags` junction table.
 - `src/modules/meta-options` - JSON-backed metadata for posts with one-to-one relation.
+- `src/modules/uploads` - File uploads with Azure Blob Storage backend, CDN URL generation, and metadata persistence.
+- `src/modules/auth` - Authentication module with JWT-based auth, Google OAuth 2.0 wrapper, token generation and refresh.
+- `src/modules/mail` - Email delivery with EJS template rendering, SMTP transport, and welcome email on user registration.
 - `src/common/exceptions` - Full exception handling layer: 404, 409, 400, 408, 401, 403, 503, 500 helpers.
 - `src/common/validators` - Reusable tag relation validator for many-to-many integrity.
 - `src/helpers` - Response formatting and JSON parsing helpers.

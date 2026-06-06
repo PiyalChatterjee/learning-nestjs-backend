@@ -61,6 +61,50 @@ Capture the following fields every time:
 - Verification Result
 - Lesson/Topic Context
 
+## 2026-06-06 - Mail Sent Without Rendered Body (EMPTY_MESSAGE)
+
+### Symptom
+- Spam analysis reported `EMPTY_MESSAGE` and `MISSING_FROM` when sending welcome emails.
+
+### Root Cause
+- In [src/modules/mail/mail.module.ts](src/modules/mail/mail.module.ts), `defaults` and `template` were nested inside `transport` instead of being top-level MailerModule options, so template rendering/default sender configuration was not reliably applied.
+
+### Change Made
+- Updated [src/modules/mail/mail.module.ts](src/modules/mail/mail.module.ts):
+  - moved `defaults` and `template` out of `transport` into proper top-level mailer config.
+  - changed path import from `path/win32` to `path` for standard path handling.
+- Updated [src/modules/mail/providers/mail.service.ts](src/modules/mail/providers/mail.service.ts):
+  - removed hardcoded `from` to use module defaults.
+  - added a `text` fallback body so the email always contains textual content.
+
+### Verification Result
+- `npm run build` completed successfully after the fix.
+- TypeScript diagnostics show no errors in updated mail files.
+
+### Lesson/Topic Context
+- In Nest Mailer setup, `transport`, `defaults`, and `template` are siblings in config, not nested.
+- Provide both HTML template rendering and plain-text fallback for better delivery compatibility and spam scoring.
+
+## 2026-06-06 - Mail Templates Not Copied To dist During Build
+
+### Symptom
+- After running build, EJS mail templates were expected in dist but were initially reported as missing.
+
+### Root Cause
+- Asset configuration needed a working glob pattern for template files, and verification timing also mattered while checking output.
+
+### Change Made
+- Updated [nest-cli.json](nest-cli.json) compiler options to include EJS assets and enable asset watching:
+  - assets: ["**/*.ejs"]
+  - watchAssets: true
+
+### Verification Result
+- Confirmed template output now exists in dist under modules/mail/templates/welcome.ejs after build.
+
+### Lesson/Topic Context
+- Static template files are not TypeScript outputs; they must be included through Nest asset config.
+- Verify final dist structure after build to confirm asset copy behavior.
+
 ## 2026-06-06 - File Upload Module Built With Azure Blob Storage (AWS Replacement)
 
 ### Symptom

@@ -16,6 +16,7 @@ import { User } from '../user.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { HashingProvider } from '../../auth/providers/hashing.provider';
+import { MailService } from '../../mail/providers/mail.service';
 
 /**
  * Handles single user creation with validation, duplicate checking, and password hashing.
@@ -27,6 +28,7 @@ export class CreateUserProvider {
    * @param userRepository - TypeORM repository for persisting and querying User entities.
    * @param hashingProvider - Provider for hashing user passwords before saving to the database.
    *   Uses forwardRef to handle the circular dependency between UsersModule and AuthModule.
+   * @param mailService - Service for sending emails to users.
    */
   constructor(
     @InjectRepository(User)
@@ -34,6 +36,8 @@ export class CreateUserProvider {
 
     @Inject(forwardRef(() => HashingProvider))
     private readonly hashingProvider: HashingProvider,
+
+    private readonly mailService: MailService,
   ) {}
 
   /**
@@ -74,6 +78,8 @@ export class CreateUserProvider {
 
       // save the user to the database
       await this.userRepository.save(user);
+      // send welcome email
+      await this.mailService.sendWelcomeEmail(user);
       return user;
     } catch (error) {
       throwIfServiceUnavailable(error, {

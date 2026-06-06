@@ -1,7 +1,7 @@
 ### Upload a single text file
 POST http://localhost:8000/v1/uploads/file
 Content-Type: multipart/form-data; boundary=boundary
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obi5kb2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3ODA3MDcxMTksImV4cCI6MTc4MDcxMDcxOSwiYXVkIjoibG9jYWxob3N0OjgwODAiLCJpc3MiOiJsb2NhbGhvc3Q6ODA4MCJ9.JCQWzI8xnIg8U3leGrl8wmeLsmF2QWRU9FGk1x2ZGOs
+Authorization: Bearer <access_token>
 
 --boundary
 Content-Disposition: form-data; name="file"; filename="sample.txt"

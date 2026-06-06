@@ -1,12 +1,12 @@
-### Create Jane Doe
+### Create Hal Jordan
 POST http://localhost:8000/v1/users
 Content-Type: application/json
 
 {
-    "firstName": "Jane",
-    "lastName": "Doe",
-    "email": "jane.doe@example.com",
-    "password": "SecurePassword123!"
+    "firstName": "Hal",
+    "lastName": "Jordan",
+    "email": "hal.jordan@yopmail.com",
+    "password": "Password@123"
 }
 
 ### Create John Doe

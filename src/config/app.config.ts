@@ -29,4 +29,10 @@ export default registerAs('appConfig', () => ({
     containerName: process.env.AZURE_BLOB_CONTAINER_NAME || 'uploads',
     cdnEndpoint: process.env.AZURE_CDN_ENDPOINT,
   },
+  mail: {
+    username: process.env.SMTP_USERNAME,
+    password: process.env.SMTP_PASSWORD,
+    host: process.env.MAIL_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+  },
 }));

@@ -28,4 +28,8 @@ export default Joi.object({
   AZURE_STORAGE_CONNECTION_STRING: Joi.string().required(),
   AZURE_BLOB_CONTAINER_NAME: Joi.string().default('uploads'),
   AZURE_CDN_ENDPOINT: Joi.string().uri().required(),
+  MAIL_HOST: Joi.string().required(),
+  SMTP_USERNAME: Joi.string().required(),
+  SMTP_PASSWORD: Joi.string().required(),
+  SMTP_PORT: Joi.number().default(587),
 });

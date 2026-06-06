@@ -4,10 +4,11 @@
 
 Build a course-aligned backend in small learning increments, with proof of implementation and a clear next-step backlog.
 
-## Current Snapshot (2026-06-06)
+## Current Snapshot (2026-06-07)
 
 - **Request Lifecycle Complete (Middleware omitted as optional):** All core NestJS request/response phases implemented—guards, interceptors, pipes, exception filters—with global registration in `AppModule` for consistency.
 - **Global Exception Filter implemented**: `HttpExceptionFilter` catches all exceptions at filter stage, formats responses with timestamp/path/message, and logs unhandled (non-HttpException) errors via injected `Logger`.
+- **Mail module with EJS templating complete**: MailerModule configured with SMTP transport, EJS template adapter, and welcome email service; templates auto-copied to dist via nest-cli asset config; sendWelcomeEmail triggered on new user registration with HTML template and plain-text fallback.
 - **Rate Limiting (Throttler)**: `@nestjs/throttler` guard active globally with 100 requests per 60-second window per client IP; returns 429 on limit exceeded; sensitive routes can apply stricter limits via `@Throttle()` decorator.
 - **Validation Pipe migrated to AppModule**: Moved from `main.ts` to module-level `APP_PIPE` for centralized global infrastructure management.
 - Core app bootstrap is in place with versioned routing and validation.
@@ -79,6 +80,12 @@ Build a course-aligned backend in small learning increments, with proof of imple
 	- Upload metadata persisted in `uploads` table (`blobName`, `url`, `size`, `mimeType`, `originalFileName`, `uploadedAt`)
 	- CDN delivery integrated through Azure Front Door endpoint (`AZURE_CDN_ENDPOINT`) with safe fallback to direct blob URL
 	- Upload routes explicitly marked public with `@Auth(AuthType.None)` under global auth guard strategy
+- **Mail module with EJS templates and SMTP integration**:
+	- MailerModule configured via AppModule with configurable SMTP host/port/auth
+	- EJS template adapter set up at `src/modules/mail/templates/`
+	- Automatic asset copy during build: templates included in dist via `nest-cli.json` asset glob
+	- `sendWelcomeEmail()` triggered on user registration; generates HTML body from EJS template + plain-text fallback
+	- From address and template config managed via ConfigService for environment flexibility
 
 ## Week-by-Week Status
 
@@ -200,11 +207,16 @@ Status: Complete (2026-06-06)
 - **Serialization via entity decorators** — `@Exclude()` on User entity sensitive fields; no manual field stripping needed
 - **Unit test suite at 27/27 suites passing** — fixed 10 previously failing test specs (missing mock providers across auth and user providers)
 
-## Week 10: Exception Filter + Middleware + E2E Tests
+## Week 10: Exception Filter + Middleware + E2E Tests + Mail Integration
 
 Status: In Progress
 
 - Global `HttpExceptionFilter` to standardise error response shape (Completed)
+- Mail module with EJS templates and SMTP integration (Completed 2026-06-07)
+  - MailerModule bootstrap with configurable SMTP transport
+  - EJS template rendering with HTML + plain-text fallback
+  - Asset pipeline config in nest-cli.json for template distribution
+  - Welcome email triggered on user creation
 - Simple `LoggerMiddleware` to log method + URL on every request (Optional, pending)
 - E2E tests for bulk operations (success paths and transaction rollback)
 - Auth-focused E2E tests (guard defaults, public route opt-out)
@@ -246,3 +258,4 @@ Status: In Progress
 | 2026-06-04 | Global auth guard + JWT identity propagation | Registered `AuthenticationGuard` as APP_GUARD with default Bearer auth, introduced route-level auth metadata (`@Auth` + `AuthType`), added `@ActiveUser` decorator for claims access, and updated post creation flow to derive author from JWT instead of `authorEmail` payload field | src/app.module.ts, src/modules/auth/guards/authentication.guard.ts, src/modules/auth/decorators/auth.decorator.ts, src/modules/auth/decorators/active-user.decorator.ts, src/modules/posts/dtos/create-post.dto.ts, src/modules/posts/providers/create-post.provider.ts | 5 | Should refresh-token flow be added before expanding protected write operations? |
 | 2026-06-05 | Google OAuth API wrapper + config fixes | Implemented GoogleAuthenticationService as API wrapper for Google Auth Library with ID token verification, user lookup by googleId, and JWT token generation; added google-authentication endpoint at /v1/auth/google-authentication; fixed TypeORM synchronize config parsing; added explicit error handling for null-user and missing token payloads | src/modules/auth/social/providers/google-authentication.service.ts, src/modules/auth/social/google-authentication.controller.ts, src/modules/users/providers/find-one-by-google-id.provider.ts, src/modules/users/providers/users.service.ts, src/app.module.ts, src/config/app.config.ts, docs/learning-issues.md | 4 | Should auto-provision (create user on first Google login) be added? Should refresh-token be generated alongside access token in Google flow? |
 | 2026-06-06 | File upload module with Azure Blob + Front Door CDN | Replaced AWS upload flow with Azure Blob Storage module (single + multiple upload endpoints), persisted upload metadata in PostgreSQL, integrated Azure Front Door CDN URL generation with endpoint normalization/fallback guard, and validated via manual upload tests + Azure portal confirmation | src/modules/uploads/uploads.controller.ts, src/modules/uploads/providers/uploads.service.ts, src/modules/uploads/upload.entity.ts, src/config/app.config.ts, .env, .env.development.local, src/modules/uploads/http/*.http, docs/learning-issues.md | 5 | Add automated upload tests now or after finishing remaining Week 10 platform tasks? |
+| 2026-06-07 | Mail module with EJS templates + SMTP transport | Configured MailerModule with SMTP credentials from ConfigService, set up EJS template adapter pointing to `src/modules/mail/templates/`, fixed mailer config nesting (moved `defaults`/`template` out of `transport`), added HTML template + plain-text fallback to welcome email, configured nest-cli asset copy for template distribution, added full JSDoc to MailService | src/modules/mail/mail.module.ts, src/modules/mail/providers/mail.service.ts, src/modules/mail/templates/welcome.ejs, nest-cli.json, docs/learning-issues.md | 5 | Add email verification flow with token-based links? Add email templates for password reset or account notifications? |

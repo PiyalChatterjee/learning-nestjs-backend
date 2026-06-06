@@ -1,4 +1,8 @@
-import { ClassSerializerInterceptor, Module, ValidationPipe } from '@nestjs/common';
+import {
+  ClassSerializerInterceptor,
+  Module,
+  ValidationPipe,
+} from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 // Imported modules
@@ -11,7 +15,6 @@ import { TagsModule } from './modules/tags/tags.module';
 import { MetaOptionsModule } from './modules/meta-options/meta-options.module';
 import { PaginationModule } from './common/paginations/pagination.module';
 // Database configuration
-import { AppDataSource } from './database/data-source';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import environmentValidationSchema from './config/environment.validation';
@@ -25,6 +28,7 @@ import { DataResponseInterceptor } from './common/interceptors/data-response/dat
 import { HttpExceptionFilter } from './common/exceptions/filters/http-exception/http-exception.filter';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { UploadsModule } from './modules/uploads/uploads.module';
+import { MailModule } from './modules/mail/mail.module';
 
 /**
  * Root application module that wires feature modules and infrastructure.
@@ -89,6 +93,7 @@ const ENV_FILE_PATH = ENV ? `.env.${ENV}.local` : '.env';
       }),
     }),
     UploadsModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [
@@ -122,7 +127,7 @@ const ENV_FILE_PATH = ENV ? `.env.${ENV}.local` : '.env';
         forbidNonWhitelisted: true,
       }), // Global validation pipe to validate and transform incoming request data based on DTOs and class-validator decorators.
     },
-    AccessTokenGuard, // Register AccessTokenGuard as a provider for dependency injection in AuthenticationGuard and other guards/services that may need it.
+    AccessTokenGuard,
   ],
 })
 export class AppModule {}
