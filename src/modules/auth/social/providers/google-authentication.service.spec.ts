@@ -61,7 +61,9 @@ describe('GoogleAuthenticationService', () => {
       ],
     }).compile();
 
-    service = module.get<GoogleAuthenticationService>(GoogleAuthenticationService);
+    service = module.get<GoogleAuthenticationService>(
+      GoogleAuthenticationService,
+    );
   });
 
   it('should be defined', () => {
@@ -69,8 +71,16 @@ describe('GoogleAuthenticationService', () => {
   });
 
   it('returns tokens for an existing google-linked user', async () => {
-    const existingUser = { id: 7, email: 'linked@example.com', googleId: 'gid-7' };
-    const tokenPair = { accessToken: 'a', refreshToken: 'r', email: existingUser.email };
+    const existingUser = {
+      id: 7,
+      email: 'linked@example.com',
+      googleId: 'gid-7',
+    };
+    const tokenPair = {
+      accessToken: 'a',
+      refreshToken: 'r',
+      email: existingUser.email,
+    };
 
     mockVerifyIdToken.mockResolvedValue({
       getPayload: () => ({
@@ -82,7 +92,9 @@ describe('GoogleAuthenticationService', () => {
     usersService.findOneByGoogleId.mockResolvedValue(existingUser);
     generateTokensProvider.generateTokens.mockResolvedValue(tokenPair);
 
-    await expect(service.authenticate({ token: 'id-token' })).resolves.toEqual(tokenPair);
+    await expect(service.authenticate({ token: 'id-token' })).resolves.toEqual(
+      tokenPair,
+    );
     expect(usersService.findOneByGoogleId).toHaveBeenCalledWith('gid-7');
     expect(usersService.findOneByEmail).not.toHaveBeenCalled();
   });
@@ -90,7 +102,11 @@ describe('GoogleAuthenticationService', () => {
   it('links an existing email account when googleId is missing', async () => {
     const emailUser = { id: 11, email: 'existing@example.com', googleId: null };
     const linkedUser = { ...emailUser, googleId: 'gid-11' };
-    const tokenPair = { accessToken: 'a2', refreshToken: 'r2', email: linkedUser.email };
+    const tokenPair = {
+      accessToken: 'a2',
+      refreshToken: 'r2',
+      email: linkedUser.email,
+    };
 
     mockVerifyIdToken.mockResolvedValue({
       getPayload: () => ({
@@ -104,14 +120,20 @@ describe('GoogleAuthenticationService', () => {
     usersService.linkGoogleAccount.mockResolvedValue(linkedUser);
     generateTokensProvider.generateTokens.mockResolvedValue(tokenPair);
 
-    await expect(service.authenticate({ token: 'id-token' })).resolves.toEqual(tokenPair);
+    await expect(service.authenticate({ token: 'id-token' })).resolves.toEqual(
+      tokenPair,
+    );
     expect(usersService.linkGoogleAccount).toHaveBeenCalledWith(11, 'gid-11');
     expect(usersService.createGoogleUser).not.toHaveBeenCalled();
   });
 
   it('auto-provisions when user does not exist by googleId or email', async () => {
     const newUser = { id: 13, email: 'new@example.com', googleId: 'gid-13' };
-    const tokenPair = { accessToken: 'a3', refreshToken: 'r3', email: newUser.email };
+    const tokenPair = {
+      accessToken: 'a3',
+      refreshToken: 'r3',
+      email: newUser.email,
+    };
 
     mockVerifyIdToken.mockResolvedValue({
       getPayload: () => ({
@@ -127,7 +149,9 @@ describe('GoogleAuthenticationService', () => {
     usersService.createGoogleUser.mockResolvedValue(newUser);
     generateTokensProvider.generateTokens.mockResolvedValue(tokenPair);
 
-    await expect(service.authenticate({ token: 'id-token' })).resolves.toEqual(tokenPair);
+    await expect(service.authenticate({ token: 'id-token' })).resolves.toEqual(
+      tokenPair,
+    );
     expect(usersService.createGoogleUser).toHaveBeenCalledWith({
       email: 'new@example.com',
       firstName: 'New',
@@ -145,7 +169,9 @@ describe('GoogleAuthenticationService', () => {
       }),
     });
 
-    await expect(service.authenticate({ token: 'id-token' })).rejects.toBeDefined();
+    await expect(
+      service.authenticate({ token: 'id-token' }),
+    ).rejects.toBeDefined();
     expect(usersService.findOneByGoogleId).not.toHaveBeenCalled();
   });
 });

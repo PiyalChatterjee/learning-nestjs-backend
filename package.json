@@ -98,7 +98,14 @@
       ]
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "src/**/*.(t|j)s",
+      "!src/**/*.spec.ts",
+      "!src/**/*.module.ts",
+      "!src/main.ts",
+      "!src/database/data-source.ts",
+      "!src/database/migrations/**",
+      "!src/database/database-connection.bootstrap.ts",
+      "!src/config/**"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"

@@ -110,7 +110,10 @@ export class Post {
   /**
    * Optional list of tag labels.
    */
-  @ManyToMany(() => Tag, (tag) => tag.posts, { eager: true, onDelete: 'CASCADE' })
+  @ManyToMany(() => Tag, (tag) => tag.posts, {
+    eager: true,
+    onDelete: 'CASCADE',
+  })
   @JoinTable({ name: 'post_tags' })
   tags: Tag[];
 

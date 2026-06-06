@@ -83,8 +83,8 @@ export class AuthenticationGuard implements CanActivate {
    * Evaluates whether the incoming request is authorized based on the route's auth type.
    *
    * Execution flow:
-  * 1. Reads AUTH_TYPE_KEY metadata from the handler and class using the Reflector.
-  *    Falls back to [AuthType.Bearer] if no metadata is present.
+   * 1. Reads AUTH_TYPE_KEY metadata from the handler and class using the Reflector.
+   *    Falls back to [AuthType.Bearer] if no metadata is present.
    * 2. Maps each auth type to its corresponding guard(s) via authTypeGuardMap.
    * 3. Iterates through all resolved guards and calls canActivate() on each.
    * 4. If a guard returns false, throws UnauthorizedException (401).

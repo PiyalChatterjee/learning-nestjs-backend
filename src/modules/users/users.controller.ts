@@ -17,7 +17,15 @@ import { CreateUserDto } from './dtos/create-user.dto';
 import { PatchUserDto } from './dtos/patch-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { UsersService } from './providers/users.service';
-import { ApiBearerAuth, ApiQuery, ApiTags, ApiBody, ApiParam, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiQuery,
+  ApiTags,
+  ApiBody,
+  ApiParam,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { CreateManyUsersDto } from './dtos/create-many-users.dto';
 import { GetUsersDto } from './dtos/get-users.dto';
 import { AccessTokenGuard } from '../auth/guards/access-token.guard';
@@ -84,8 +92,14 @@ export class UsersController {
    */
   @Get()
   @ApiOperation({ summary: 'Get all users with optional pagination' })
-  @ApiResponse({ status: 200, description: 'Successfully retrieved users with pagination' })
-  @ApiResponse({ status: 400, description: 'Invalid pagination query parameters' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved users with pagination',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid pagination query parameters',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiQuery({
     name: 'limit',
@@ -108,7 +122,10 @@ export class UsersController {
    */
   @Get(':id')
   @ApiOperation({ summary: 'Get a user by ID' })
-  @ApiResponse({ status: 200, description: 'Successfully retrieved user by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved user by ID',
+  })
   @ApiResponse({ status: 400, description: 'Invalid user id' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'User not found' })
@@ -131,7 +148,10 @@ export class UsersController {
   @ApiResponse({ status: 201, description: 'Successfully created a new user' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 409, description: 'Email already in use' })
-  @ApiBody({ type: CreateUserDto, description: 'Data transfer object for creating a new user' })
+  @ApiBody({
+    type: CreateUserDto,
+    description: 'Data transfer object for creating a new user',
+  })
   public createUser(@Body() dto: CreateUserDto) {
     return this.usersService.createUser(dto);
   }
@@ -145,10 +165,19 @@ export class UsersController {
    */
   @Post('create-many')
   @ApiOperation({ summary: 'Create multiple users in a batch operation' })
-  @ApiResponse({ status: 201, description: 'Successfully created multiple users' })
+  @ApiResponse({
+    status: 201,
+    description: 'Successfully created multiple users',
+  })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
-  @ApiResponse({ status: 409, description: 'One or more emails already in use' })
-  @ApiBody({ type: CreateManyUsersDto, description: 'Array of data transfer objects for creating multiple users' })
+  @ApiResponse({
+    status: 409,
+    description: 'One or more emails already in use',
+  })
+  @ApiBody({
+    type: CreateManyUsersDto,
+    description: 'Array of data transfer objects for creating multiple users',
+  })
   public createManyUsers(@Body() createManyUsersDto: CreateManyUsersDto) {
     return this.usersService.createManyUsers(createManyUsersDto);
   }
@@ -161,7 +190,10 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Successfully updated the user' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @ApiBody({ type: UpdateUserDto, description: 'Data transfer object for updating an existing user' })
+  @ApiBody({
+    type: UpdateUserDto,
+    description: 'Data transfer object for updating an existing user',
+  })
   @ApiParam({
     name: 'id',
     required: true,
@@ -175,16 +207,22 @@ export class UsersController {
   ) {
     return this.usersService.updateUser(id, dto);
   }
-  
+
   /**
    * Applies partial updates to a user.
    */
   @Patch(':id')
   @ApiOperation({ summary: 'Partially update an existing user' })
-  @ApiResponse({ status: 200, description: 'Successfully partially updated the user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully partially updated the user',
+  })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @ApiBody({ type: PatchUserDto, description: 'Data transfer object for partially updating an existing user' })
+  @ApiBody({
+    type: PatchUserDto,
+    description: 'Data transfer object for partially updating an existing user',
+  })
   @ApiParam({
     name: 'id',
     required: true,
@@ -198,7 +236,7 @@ export class UsersController {
   ) {
     return this.usersService.patchUser(id, dto);
   }
-  
+
   /**
    * Deletes a user by id.
    */

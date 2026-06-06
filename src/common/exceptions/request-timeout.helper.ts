@@ -69,7 +69,5 @@ export function throwIfRequestTimeout(
   }
 
   const contextSuffix = options.context ? ` (${options.context})` : '';
-  throw new RequestTimeoutException(
-    `${options.message}${contextSuffix}`,
-  );
+  throw new RequestTimeoutException(`${options.message}${contextSuffix}`);
 }

@@ -35,6 +35,10 @@ import { CreateGoogleUserProvider } from './providers/create-google-user.provide
     PaginationModule,
     JwtModule.registerAsync(jwtConfig),
   ],
-  exports: [UsersService, FindOneUserByEmailProvider, FindOneByGoogleIdProvider],
+  exports: [
+    UsersService,
+    FindOneUserByEmailProvider,
+    FindOneByGoogleIdProvider,
+  ],
 })
 export class UsersModule {}

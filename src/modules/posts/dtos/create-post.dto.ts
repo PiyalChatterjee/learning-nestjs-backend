@@ -132,12 +132,12 @@ export class CreatePostDto {
     description: 'Additional metadata as a JSON string',
     type: PostMetaOptionDto,
     example: {
-      metaValue: '{"canonicalUrl": "https://example.com/posts/getting-started-with-nestjs"}',
+      metaValue:
+        '{"canonicalUrl": "https://example.com/posts/getting-started-with-nestjs"}',
     },
   })
   @IsOptional()
   @ValidateNested()
   @Type(() => PostMetaOptionDto)
   metaOption?: PostMetaOptionDto;
-
 }

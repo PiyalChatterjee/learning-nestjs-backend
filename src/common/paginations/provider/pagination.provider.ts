@@ -1,7 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { IPaginated } from '../interfaces/paginated.interface';
 import { PaginationQueryDto } from '../dtos/pagination-query.dto';
-import { FindOptionsOrder, FindOptionsWhere, ObjectLiteral, Repository } from 'typeorm';
+import {
+  FindOptionsOrder,
+  FindOptionsWhere,
+  ObjectLiteral,
+  Repository,
+} from 'typeorm';
 import { Request } from 'express';
 import { REQUEST } from '@nestjs/core';
 
@@ -56,7 +61,7 @@ export class PaginationProvider {
     const requestedLimit = paginateQuery.limit ?? 10;
     const limit = Math.min(requestedLimit, MAX_LIMIT);
     const order =
-      options.order ?? (({ id: 'DESC' } as unknown) as FindOptionsOrder<T>);
+      options.order ?? ({ id: 'DESC' } as unknown as FindOptionsOrder<T>);
 
     const results = await repository.find({
       skip: (currentPage - 1) * limit,

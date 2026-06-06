@@ -8,7 +8,8 @@ class GetTagsBaseDto {
    * Keyword to search within tag names (case-insensitive partial match).
    */
   @ApiPropertyOptional({
-    description: 'Keyword to search within tag names (case-insensitive partial match)',
+    description:
+      'Keyword to search within tag names (case-insensitive partial match)',
     example: 'react',
   })
   @IsOptional()
@@ -17,4 +18,8 @@ class GetTagsBaseDto {
   search?: string;
 }
 
-export class GetTagsDto extends IntersectionType(GetTagsBaseDto, PaginationQueryDto, SortQueryDto) {}
+export class GetTagsDto extends IntersectionType(
+  GetTagsBaseDto,
+  PaginationQueryDto,
+  SortQueryDto,
+) {}

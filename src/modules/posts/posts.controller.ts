@@ -34,8 +34,8 @@ import { IActiveUser } from '../auth/interfaces/active-user.interface';
 @Controller('posts')
 export class PostsController {
   /**
-  * Creates PostsController dependencies.
-  * @param postsService - Service that handles post business operations.
+   * Creates PostsController dependencies.
+   * @param postsService - Service that handles post business operations.
    */
   constructor(private readonly postsService: PostsService) {}
 

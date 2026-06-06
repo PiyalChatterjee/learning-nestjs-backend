@@ -103,9 +103,7 @@ export function throwIfServiceUnavailable(
  * @param isConnected - Boolean result from a connectivity check.
  * @throws {ServiceUnavailableException} When isConnected is false.
  */
-export function assertDatabaseAvailable(
-  isConnected: boolean,
-): void {
+export function assertDatabaseAvailable(isConnected: boolean): void {
   if (!isConnected) {
     throw new ServiceUnavailableException(
       'Database service is currently unavailable. Please try again later.',

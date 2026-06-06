@@ -3,7 +3,7 @@ import { IsNotEmpty, IsString } from 'class-validator';
 
 /**
  * Data Transfer Object for token refresh requests.
- * 
+ *
  * Used to exchange an existing refresh token for a new access token,
  * allowing users to maintain their session without re-authenticating.
  */

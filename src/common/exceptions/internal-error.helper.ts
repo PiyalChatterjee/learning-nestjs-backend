@@ -72,8 +72,9 @@ export function throwIfUnexpectedError(
 
   // Log the detailed error for server-side debugging
   const contextInfo = options.context ? ` [${options.context}]` : '';
-  const internalMsg = options.internalMessage || String(errorObj.message || 'Unknown error');
-  
+  const internalMsg =
+    options.internalMessage || String(errorObj.message || 'Unknown error');
+
   logger.error(
     `${options.userMessage}${contextInfo}: ${internalMsg}`,
     errorObj instanceof Error ? errorObj.stack : '',
@@ -127,13 +128,10 @@ export async function handleAsyncError<T>(
  * @returns Never — always throws.
  * @throws The original error unchanged.
  */
-export function logAndRethrow(
-  error: unknown,
-  context: string,
-): never {
+export function logAndRethrow(error: unknown, context: string): never {
   const errorObj = error as Record<string, unknown>;
   const message = String(errorObj.message || 'Unknown error');
-  
+
   logger.error(
     `${context}: ${message}`,
     errorObj instanceof Error ? errorObj.stack : '',

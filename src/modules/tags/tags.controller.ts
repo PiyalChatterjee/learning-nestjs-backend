@@ -11,7 +11,13 @@ import {
 import { TagsService } from './providers/tags.service';
 import { PostTagDto } from './dtos/post-tag.dto';
 import { CreateManyTagsDto } from './dtos/create-many-tags.dto';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { formatTag } from '../../helpers/format-tag.helper';
 import { formatPostSummary } from '../../helpers/format-post-summary.helper';
 import { PaginationQueryDto } from '../../common/paginations/dtos/pagination-query.dto';
@@ -46,12 +52,14 @@ export class TagsController {
   @Post('create-many')
   @ApiOperation({
     summary: 'Create multiple tags in bulk',
-    description: 'Create multiple tags in a single atomic transaction. All tags are validated and persisted together, or all are rolled back on any error.',
+    description:
+      'Create multiple tags in a single atomic transaction. All tags are validated and persisted together, or all are rolled back on any error.',
   })
   @ApiResponse({ status: 201, description: 'Tags created successfully' })
   @ApiResponse({
     status: 400,
-    description: 'Validation failed (batch too large, empty batch, duplicate slugs, or invalid tag data)',
+    description:
+      'Validation failed (batch too large, empty batch, duplicate slugs, or invalid tag data)',
   })
   @ApiResponse({ status: 409, description: 'Duplicate slug conflict' })
   @ApiBody({ type: CreateManyTagsDto })

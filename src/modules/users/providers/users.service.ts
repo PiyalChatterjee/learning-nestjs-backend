@@ -138,13 +138,19 @@ export class UsersService {
       }
 
       // allowed sortable columns — guards against arbitrary user input reaching ORDER BY
-      const ALLOWED_SORT_FIELDS: (keyof import('../user.entity').User)[] = ['id', 'firstName', 'lastName', 'email'];
-      const sortField = (
-        getUsersDto.sortBy && ALLOWED_SORT_FIELDS.includes(getUsersDto.sortBy as any)
+      const ALLOWED_SORT_FIELDS: (keyof import('../user.entity').User)[] = [
+        'id',
+        'firstName',
+        'lastName',
+        'email',
+      ];
+      const sortField =
+        getUsersDto.sortBy &&
+        ALLOWED_SORT_FIELDS.includes(getUsersDto.sortBy as any)
           ? getUsersDto.sortBy
-          : 'id'
-      );
-      const sortDir = getUsersDto.sortOrder === SortOrder.Ascending ? 'ASC' : 'DESC';
+          : 'id';
+      const sortDir =
+        getUsersDto.sortOrder === SortOrder.Ascending ? 'ASC' : 'DESC';
 
       // build optional search filter on name or email
       const where: FindOptionsWhere<User> | undefined = getUsersDto.search
@@ -558,7 +564,10 @@ export class UsersService {
    * @param googleId - Google subject claim to attach to this user.
    * @returns The updated user with linked googleId.
    */
-  public async linkGoogleAccount(userId: number, googleId: string): Promise<User> {
+  public async linkGoogleAccount(
+    userId: number,
+    googleId: string,
+  ): Promise<User> {
     try {
       const user = assertResourceExists(
         await this.userRepository.findOne({ where: { id: userId } }),

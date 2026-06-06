@@ -45,13 +45,13 @@ export class PostCreateManyProvider {
   ) {}
 
   /**
-    * Creates multiple posts in a single atomic transaction for the authenticated user.
-    * All posts are validated and prepared in memory first, including author lookup and tag resolution,
-    * then saved in one bulk operation with relationships.
-    * If any validation or DB error occurs, the entire transaction is rolled back.
+   * Creates multiple posts in a single atomic transaction for the authenticated user.
+   * All posts are validated and prepared in memory first, including author lookup and tag resolution,
+   * then saved in one bulk operation with relationships.
+   * If any validation or DB error occurs, the entire transaction is rolled back.
    *
    * @param createManyPostsDto - Object containing array of DTOs with post creation data.
-    * @param activeUser - Authenticated user claims used as author source for all posts.
+   * @param activeUser - Authenticated user claims used as author source for all posts.
    * @returns The array of persisted {@link Post} entities with formatted author details.
    * @throws BadRequestException if batch is empty, exceeds size limit, or contains duplicate slugs.
    * @throws NotFoundException if an author email or tag slug cannot be resolved.

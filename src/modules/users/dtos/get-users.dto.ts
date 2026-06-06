@@ -8,7 +8,8 @@ class GetUsersBaseDto {
    * Keyword to search within user names or email (case-insensitive partial match).
    */
   @ApiPropertyOptional({
-    description: 'Keyword to search within user first name (case-insensitive partial match)',
+    description:
+      'Keyword to search within user first name (case-insensitive partial match)',
     example: 'john',
   })
   @IsOptional()
@@ -17,4 +18,8 @@ class GetUsersBaseDto {
   search?: string;
 }
 
-export class GetUsersDto extends IntersectionType(GetUsersBaseDto, PaginationQueryDto, SortQueryDto) {}
+export class GetUsersDto extends IntersectionType(
+  GetUsersBaseDto,
+  PaginationQueryDto,
+  SortQueryDto,
+) {}

@@ -23,7 +23,7 @@ describe('PostsController', () => {
         {
           provide: getRepositoryToken(Post),
           useValue: {},
-        }
+        },
       ],
     }).compile();
 

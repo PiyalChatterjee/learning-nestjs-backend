@@ -65,7 +65,9 @@ export class TagRelationValidator {
     );
 
     if (missingTagSlugs.length > 0) {
-      throw new NotFoundException(`Tags not found: ${missingTagSlugs.join(', ')}`);
+      throw new NotFoundException(
+        `Tags not found: ${missingTagSlugs.join(', ')}`,
+      );
     }
 
     return tags;

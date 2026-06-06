@@ -13,7 +13,15 @@ import { PostCreateManyProvider } from './post-create-many.provider';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Post } from '../post.entity';
 import { User } from '../../users/user.entity';
-import { Between, FindOperator, FindOptionsWhere, ILike, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
+import {
+  Between,
+  FindOperator,
+  FindOptionsWhere,
+  ILike,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 import { formatPostWithAuthor } from '../../../helpers/format-post-with-author.helper';
 import { MetaOption } from '../../meta-options/meta-option.entity';
 import { GetPostsDto } from '../dtos/get-posts.dto';
@@ -61,19 +69,30 @@ export class PostsService {
   ): Promise<IPaginated<TFormattedPost>> {
     try {
       // allowed sortable columns — guards against arbitrary user input reaching ORDER BY
-      const ALLOWED_SORT_FIELDS: (keyof Post)[] = ['id', 'title', 'publishOn', 'status', 'createdAt'];
+      const ALLOWED_SORT_FIELDS: (keyof Post)[] = [
+        'id',
+        'title',
+        'publishOn',
+        'status',
+        'createdAt',
+      ];
       const sortField: keyof Post = (
-        getPostsDto.sortBy && ALLOWED_SORT_FIELDS.includes(getPostsDto.sortBy as keyof Post)
+        getPostsDto.sortBy &&
+        ALLOWED_SORT_FIELDS.includes(getPostsDto.sortBy as keyof Post)
           ? getPostsDto.sortBy
           : 'id'
       ) as keyof Post;
-      const sortDir = getPostsDto.sortOrder === SortOrder.Ascending ? 'ASC' : 'DESC';
+      const sortDir =
+        getPostsDto.sortOrder === SortOrder.Ascending ? 'ASC' : 'DESC';
 
       // build combined where clause from all active filters
       const where: FindOptionsWhere<Post> = {};
       if (getPostsDto.status) where.status = getPostsDto.status;
       if (getPostsDto.search) where.title = ILike(`%${getPostsDto.search}%`);
-      const dateWhere = buildDateRangeWhere(getPostsDto.startDate, getPostsDto.endDate);
+      const dateWhere = buildDateRangeWhere(
+        getPostsDto.startDate,
+        getPostsDto.endDate,
+      );
       if (dateWhere) where.publishOn = dateWhere.publishOn;
 
       // fetch all posts from the database using pagination provider

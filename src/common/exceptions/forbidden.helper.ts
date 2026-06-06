@@ -89,7 +89,9 @@ export function assertResourceOwnership(
 ): void {
   if (userId !== resourceOwnerId) {
     const resource = resourceType ? ` ${resourceType}` : ' resource';
-    throw new ForbiddenException(`User is not authorized to access this${resource}`);
+    throw new ForbiddenException(
+      `User is not authorized to access this${resource}`,
+    );
   }
 }
 

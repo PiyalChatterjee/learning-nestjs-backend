@@ -24,8 +24,8 @@ export class RefreshTokensProvider {
   /**
    * Initializes the RefreshTokensProvider with required dependencies.
    *
-  * @param {UsersService} usersService - Looks up a user by the subject (`sub`) claim
-  *   extracted from the verified refresh token.
+   * @param {UsersService} usersService - Looks up a user by the subject (`sub`) claim
+   *   extracted from the verified refresh token.
    * @param {JwtService} jwtService - Verifies the incoming refresh token JWT.
    * @param {ConfigService} configService - Provides JWT secret, audience, and issuer from app config.
    * @param {GenerateTokensProvider} generateTokensProvider - Issues a new access/refresh token pair
@@ -45,8 +45,8 @@ export class RefreshTokensProvider {
    *
    * Flow:
    * 1. Verifies the refresh token JWT signature, audience, and issuer.
-  * 2. Extracts the `sub` claim from the token payload.
-  * 3. Looks up the user by id; throws {@link UnauthorizedException} if not found.
+   * 2. Extracts the `sub` claim from the token payload.
+   * 3. Looks up the user by id; throws {@link UnauthorizedException} if not found.
    * 4. Generates and returns a new token pair via {@link GenerateTokensProvider}.
    *
    * @param {RefreshTokenDto} refreshToken - DTO containing the refresh token string to validate.
@@ -60,9 +60,9 @@ export class RefreshTokensProvider {
    */
   public async refreshTokens(refreshToken: RefreshTokenDto) {
     try {
-      const { sub } = await this.jwtService.verifyAsync<Pick<{ sub: number }, 'sub'>>(
-        refreshToken.refreshToken,
-        {
+      const { sub } = await this.jwtService.verifyAsync<
+        Pick<{ sub: number }, 'sub'>
+      >(refreshToken.refreshToken, {
         secret: this.configService.get<string>('appConfig.jwt.secret'),
         audience: this.configService.get<string>(
           'appConfig.jwt.signOptions.audience',
@@ -70,8 +70,7 @@ export class RefreshTokensProvider {
         issuer: this.configService.get<string>(
           'appConfig.jwt.signOptions.issuer',
         ),
-        },
-      );
+      });
       const user = await this.usersService.findOneById(sub);
       if (!user) {
         throwIfUnauthorized(new UnauthorizedException(), {

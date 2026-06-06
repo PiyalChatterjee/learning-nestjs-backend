@@ -73,7 +73,7 @@ export class User {
   })
   @Exclude() // Exclude password from serialization to prevent exposure in API responses
   password?: string;
-  
+
   /**   * Optional Google ID for users authenticated via Google OAuth.
    * This field is nullable to allow for users who sign up with email/password.
    */

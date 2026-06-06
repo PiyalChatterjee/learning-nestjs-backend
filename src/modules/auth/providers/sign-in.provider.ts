@@ -36,8 +36,6 @@ export class SignInProvider {
     @Inject(HashingProvider)
     private readonly hashingProvider: HashingProvider,
 
-
-
     private readonly generateTokensProvider: GenerateTokensProvider,
   ) {}
 
@@ -65,7 +63,7 @@ export class SignInProvider {
    */
   public async signIn(
     signInDto: SignInDto,
-  ): Promise<{ message: string; accessToken: string, refreshToken: string }> {
+  ): Promise<{ message: string; accessToken: string; refreshToken: string }> {
     try {
       const user = await this.findOneUserByEmailProvider.findOneByEmail(
         signInDto.email,

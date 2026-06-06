@@ -129,9 +129,7 @@ export function validatePasswordStrength(password: string): void {
   }
 
   if (!/\d/.test(password)) {
-    throw new BadRequestException(
-      'Password must contain at least one number',
-    );
+    throw new BadRequestException('Password must contain at least one number');
   }
 
   if (!/[\W_]/.test(password)) {
@@ -176,10 +174,7 @@ export function validateFieldLength(
  * @param fieldName - Human-readable field label used in error messages.
  * @throws {BadRequestException} When the value is null, undefined, or an empty string.
  */
-export function validateRequired(
-  value: unknown,
-  fieldName: string,
-): void {
+export function validateRequired(value: unknown, fieldName: string): void {
   if (value === null || value === undefined || value === '') {
     throw new BadRequestException(`${fieldName} is required`);
   }

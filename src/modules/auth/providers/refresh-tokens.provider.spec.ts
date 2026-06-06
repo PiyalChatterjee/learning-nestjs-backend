@@ -81,7 +81,9 @@ describe('RefreshTokensProvider', () => {
       }),
     );
     expect(usersService.findOneById).toHaveBeenCalledWith(42);
-    expect(generateTokensProvider.generateTokens).toHaveBeenCalledWith(mockUser);
+    expect(generateTokensProvider.generateTokens).toHaveBeenCalledWith(
+      mockUser,
+    );
   });
 
   it('should throw for a token with non-existent subject user', async () => {
