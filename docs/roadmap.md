@@ -209,7 +209,7 @@ Status: Complete (2026-06-06)
 
 ## Week 10: Exception Filter + Middleware + E2E Tests + Mail Integration
 
-Status: In Progress
+Status: Complete (2026-06-07)
 
 - Global `HttpExceptionFilter` to standardise error response shape (Completed)
 - Mail module with EJS templates and SMTP integration (Completed 2026-06-07)
@@ -218,17 +218,44 @@ Status: In Progress
   - Asset pipeline config in nest-cli.json for template distribution
   - Welcome email triggered on user creation
 - Simple `LoggerMiddleware` to log method + URL on every request (Completed 2026-06-07)
-- E2E tests for bulk operations (success paths and transaction rollback)
-- Auth-focused E2E tests (guard defaults, public route opt-out)
+
+## Week 11: Unit Test Coverage Expansion
+
+Status: Complete (2026-06-07)
+
+- **Coverage raised from ~3% to 80%+ statements** (src/ files only, excluding untestable infra)
+- **41 test suites, 247 tests — all passing**
+- Scope and config fixes:
+  - Updated `collectCoverageFrom` to scope to `src/**` only, excluding spec files, module files, `main.ts`, config files, and database bootstrap
+  - Coverage baseline: 3.17% statements → **80.17% statements**, 67.56% branches, 59% functions, 79.69% lines
+- New + expanded test files:
+  - `users.service.spec.ts` — full coverage of all public methods (createUser, getAllUsers, getUserById, updateUser, patchUser, deleteUser, findOneByEmail, findOneById, findOneByGoogleId, createGoogleUser, linkGoogleAccount)
+  - `auth.service.spec.ts` — signIn, refreshTokens, isAuthenticated including error path coverage
+  - `sign-in.provider.spec.ts` — valid credentials, user not found, password mismatch
+  - `bcrypt.provider.spec.ts` — hashPassword (uniqueness, Buffer input), comparePassword (match/mismatch/Buffer)
+  - `create-post.provider.spec.ts` — createPost with tags, no tags, metaOption, author not found
+  - `user-create-many.provider.spec.ts` — batch creation, empty batch, size limit (100), duplicate emails, existing email conflict
+  - `uploads.service.spec.ts` — uploadFile success and error paths, uploadMultipleFiles success and empty/null input
+  - `meta-options.service.spec.ts` — createMetaOption success and DB error
+  - `meta-options.controller.spec.ts` — createMetaOption delegation
+  - `post-create-many.provider.spec.ts` — fixed IActiveUser shape, mockTag entity fields, CreatePostDto casts
+  - `posts.service.spec.ts` — fixed PostStatus enum, IActiveUser, DTO casts, metaOption shape
+  - `tags.service.spec.ts` — fixed Tag entity fields (createDate/updateDate/deleteDate), PostStatus enum, IPaginated assertions
+  - `mail.service.spec.ts` — sendWelcomeEmail with full name, null lastName, empty lastName
+- TypeScript errors resolved across all spec files:
+  - `IActiveUser`: replaced `id`/`username` with correct `sub`/`email` fields
+  - `User` entity: removed non-existent `isSocialAccount`/`username`/`createdAt`/`updatedAt` fields
+  - `Tag` entity: replaced `createdAt`/`updatedAt`/`deletedAt` with `createDate`/`updateDate`/`deleteDate`
+  - `PostStatus` enum: fixed `.Draft` → `.DRAFT`, `.Published` → `.PUBLISHED`
+  - Partial DTO literals cast with `as CreatePostDto`, `as UpdatePostDto`, `as CreateManyPostsDto`
+  - `result.page`/`result.limit` → `result.meta.currentPage`/`result.meta.itemsPerPage` per `IPaginated` interface
 
 ## Immediate Next Priorities
 
 1. **E2E test coverage** for bulk endpoints (users, posts, tags): success cases, batch size limits, duplicate detection, transaction rollback on conflict.
 2. **Auth route audit and tests** — add focused tests to verify default Bearer guard behavior and explicit `@Auth(AuthType.None)` bypass only on intended public endpoints.
-3. **Uploads automated tests (deferred)** — add focused unit/integration coverage for uploads service/controller and CDN URL fallback behavior.
-4. **Migration strategy** — replace `synchronize: true` with explicit TypeORM migrations when ready.
-5. **Optional:** `LoggerMiddleware` for request logging (pipeline completeness).
-6. **Optional:** Docker exploration for containerized local development and deployment simulation.
+3. **Migration strategy** — replace `synchronize: true` with explicit TypeORM migrations when ready.
+4. **Optional:** Docker exploration for containerized local development and deployment simulation.
 
 ## Continuous Tracking Rules
 
@@ -258,4 +285,4 @@ Status: In Progress
 | 2026-06-04 | Global auth guard + JWT identity propagation | Registered `AuthenticationGuard` as APP_GUARD with default Bearer auth, introduced route-level auth metadata (`@Auth` + `AuthType`), added `@ActiveUser` decorator for claims access, and updated post creation flow to derive author from JWT instead of `authorEmail` payload field | src/app.module.ts, src/modules/auth/guards/authentication.guard.ts, src/modules/auth/decorators/auth.decorator.ts, src/modules/auth/decorators/active-user.decorator.ts, src/modules/posts/dtos/create-post.dto.ts, src/modules/posts/providers/create-post.provider.ts | 5 | Should refresh-token flow be added before expanding protected write operations? |
 | 2026-06-05 | Google OAuth API wrapper + config fixes | Implemented GoogleAuthenticationService as API wrapper for Google Auth Library with ID token verification, user lookup by googleId, and JWT token generation; added google-authentication endpoint at /v1/auth/google-authentication; fixed TypeORM synchronize config parsing; added explicit error handling for null-user and missing token payloads | src/modules/auth/social/providers/google-authentication.service.ts, src/modules/auth/social/google-authentication.controller.ts, src/modules/users/providers/find-one-by-google-id.provider.ts, src/modules/users/providers/users.service.ts, src/app.module.ts, src/config/app.config.ts, docs/learning-issues.md | 4 | Should auto-provision (create user on first Google login) be added? Should refresh-token be generated alongside access token in Google flow? |
 | 2026-06-06 | File upload module with Azure Blob + Front Door CDN | Replaced AWS upload flow with Azure Blob Storage module (single + multiple upload endpoints), persisted upload metadata in PostgreSQL, integrated Azure Front Door CDN URL generation with endpoint normalization/fallback guard, and validated via manual upload tests + Azure portal confirmation | src/modules/uploads/uploads.controller.ts, src/modules/uploads/providers/uploads.service.ts, src/modules/uploads/upload.entity.ts, src/config/app.config.ts, .env, .env.development.local, src/modules/uploads/http/*.http, docs/learning-issues.md | 5 | Add automated upload tests now or after finishing remaining Week 10 platform tasks? |
-| 2026-06-07 | Mail module with EJS templates + SMTP transport | Configured MailerModule with SMTP credentials from ConfigService, set up EJS template adapter pointing to `src/modules/mail/templates/`, fixed mailer config nesting (moved `defaults`/`template` out of `transport`), added HTML template + plain-text fallback to welcome email, configured nest-cli asset copy for template distribution, added full JSDoc to MailService | src/modules/mail/mail.module.ts, src/modules/mail/providers/mail.service.ts, src/modules/mail/templates/welcome.ejs, nest-cli.json, docs/learning-issues.md | 5 | Add email verification flow with token-based links? Add email templates for password reset or account notifications? |
+| 2026-06-07 | Unit test coverage expansion | Raised coverage from ~3% to 80%+ statements across src/; 41 suites / 247 tests passing; fixed TypeScript errors in all spec files (IActiveUser shape, User entity fields, Tag entity date fields, PostStatus casing, DTO partial casts, IPaginated assertions); created new spec files for uploads.service, users.service (full), auth.service (full), sign-in.provider, bcrypt.provider, meta-options.service/controller, user-create-many.provider; updated jest collectCoverageFrom config to scope to src/ only | package.json (jest config), all *.spec.ts files in src/, docs/learning-issues.md | 5 | Remaining coverage gaps: guards, Azure upload provider (SDK integration), exception helper branches — candidates for integration/E2E tests |
