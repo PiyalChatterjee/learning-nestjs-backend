@@ -1,6 +1,8 @@
 import {
   ClassSerializerInterceptor,
+  MiddlewareConsumer,
   Module,
+  NestModule,
   ValidationPipe,
 } from '@nestjs/common';
 import { AppController } from './app.controller';
@@ -26,6 +28,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthenticationGuard } from './modules/auth/guards/authentication.guard';
 import { DataResponseInterceptor } from './common/interceptors/data-response/data-response.interceptor';
 import { HttpExceptionFilter } from './common/exceptions/filters/http-exception/http-exception.filter';
+import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { MailModule } from './modules/mail/mail.module';
@@ -122,12 +125,26 @@ const ENV_FILE_PATH = ENV ? `.env.${ENV}.local` : '.env';
     {
       provide: APP_PIPE,
       useValue: new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
+        whitelist: true, // Strip properties that do not have any decorators in the DTO
+        transform: true, // Automatically transform payloads to DTO instances based on type hints
+        forbidNonWhitelisted: true, // Throw an error if non-whitelisted properties are present
+        validationError: { target: false }, // Do not include the original object in validation errors
       }), // Global validation pipe to validate and transform incoming request data based on DTOs and class-validator decorators.
     },
     AccessTokenGuard,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  /**
+   * Registers global middleware for all incoming routes.
+   *
+   * `LoggerMiddleware` is applied to every route (`*`) and logs the HTTP
+   * method and URL at the start of each request cycle, before guards and
+   * interceptors run.
+   *
+   * @param consumer - NestJS middleware consumer used to bind middleware to routes.
+   */
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(LoggerMiddleware).forRoutes('*');
+  }
+}

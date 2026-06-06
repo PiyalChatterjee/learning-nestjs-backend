@@ -217,7 +217,7 @@ Status: In Progress
   - EJS template rendering with HTML + plain-text fallback
   - Asset pipeline config in nest-cli.json for template distribution
   - Welcome email triggered on user creation
-- Simple `LoggerMiddleware` to log method + URL on every request (Optional, pending)
+- Simple `LoggerMiddleware` to log method + URL on every request (Completed 2026-06-07)
 - E2E tests for bulk operations (success paths and transaction rollback)
 - Auth-focused E2E tests (guard defaults, public route opt-out)
 

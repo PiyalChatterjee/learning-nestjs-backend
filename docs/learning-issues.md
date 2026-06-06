@@ -2,6 +2,14 @@
 
 ## Quick Notes (Fast Reference)
 
+### NestJS Middleware (Mentor Session — 2026-06-07)
+- Middleware runs **before guards** in the request pipeline: `Middleware → Guards → Interceptors → Pipes → Handler`.
+- Implement `NestMiddleware` interface; inject `Logger` for consistent log output.
+- Register in `AppModule` by implementing `NestModule` and using `configure(consumer)`.
+- `consumer.apply(MyMiddleware).forRoutes('*')` applies globally; you can also scope to specific routes or controllers: `.forRoutes(UsersController)` or `.forRoutes({ path: 'users', method: RequestMethod.GET })`.
+- `req.originalUrl` preserves query strings (e.g. `/v1/users?page=1`); prefer over `req.url` inside middleware.
+- File: `src/common/middleware/logger.middleware.ts`
+
 ### Exception Handlers Summary
 1. **NotFound (404)** - `not-found.helper.ts` - Resource existence checks
 2. **Conflict (409)** - `unique-constraint.helper.ts` - Database constraint violations
