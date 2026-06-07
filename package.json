@@ -17,7 +17,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e": "cross-env NODE_ENV=test jest --config ./test/jest-e2e.json",
     "doc": "compodoc -p tsconfig.json -d ./.compodoc",
     "doc:serve": "compodoc -p tsconfig.json -d ./.compodoc -s --port 8080",
     "doc:watch": "compodoc -p tsconfig.json -d ./.compodoc -s --port 8080 --watch",
@@ -55,6 +55,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.18.0",
+    "@faker-js/faker": "^9.9.0",
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
@@ -63,6 +64,7 @@
     "@types/multer": "^2.1.0",
     "@types/node": "^24.0.0",
     "@types/supertest": "^7.0.0",
+    "cross-env": "^10.1.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
@@ -88,7 +90,7 @@
     "modulePaths": [
       "<rootDir>"
     ],
-    "testRegex": ".*\\.spec\\.ts$",
+    "testRegex": "(?<!e2e-)spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": [
         "ts-jest",
