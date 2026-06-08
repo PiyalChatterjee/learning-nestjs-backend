@@ -14,7 +14,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { jwtConfig } from '../../config/jwt.config';
 import { FindOneByGoogleIdProvider } from './providers/find-one-by-google-id.provider';
 import { CreateGoogleUserProvider } from './providers/create-google-user.provider';
-
+import { MongooseModule } from '@nestjs/mongoose';
+import {User as UserMongo, UserSchema} from './user.schema';
 /**
  * Users feature module that provides user API endpoints and user service logic.
  */
@@ -34,6 +35,10 @@ import { CreateGoogleUserProvider } from './providers/create-google-user.provide
     ConfigModule.forFeature(profileConfig),
     PaginationModule,
     JwtModule.registerAsync(jwtConfig),
+    MongooseModule.forFeature([{
+      name: UserMongo.name,
+      schema: UserSchema
+    }])
   ],
   exports: [
     UsersService,

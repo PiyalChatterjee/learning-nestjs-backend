@@ -11,6 +11,8 @@ import { MetaOption } from '../meta-options/meta-option.entity';
 import { TagRelationValidator } from '../../common/validators/tag-relation.validator';
 import { PaginationModule } from '../../common/paginations/pagination.module';
 import { CreatePostProvider } from './providers/create-post.provider';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Post as PostMongo, PostSchema } from './post.schema';
 
 /**
  * Posts feature module that exposes post endpoints and post service behavior.
@@ -27,6 +29,12 @@ import { CreatePostProvider } from './providers/create-post.provider';
     UsersModule,
     PaginationModule,
     TypeOrmModule.forFeature([Post, User, Tag, MetaOption]),
+    MongooseModule.forFeature([
+      {
+        name: PostMongo.name,
+        schema: PostSchema,
+      },
+    ]),
   ],
 })
 export class PostsModule {}

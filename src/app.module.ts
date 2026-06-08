@@ -12,13 +12,14 @@ import { UsersModule } from './modules/users/users.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { TagsModule } from './modules/tags/tags.module';
 import { MetaOptionsModule } from './modules/meta-options/meta-options.module';
 import { PaginationModule } from './common/paginations/pagination.module';
 // Database configuration
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
+import mongooseConfig from './config/mongoose.config';
 import environmentValidationSchema from './config/environment.validation';
 import { DatabaseConnectionBootstrap } from './database/database-connection.bootstrap';
 import { AccessTokenGuard } from './modules/auth/guards/access-token.guard';
@@ -32,6 +33,11 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { MailModule } from './modules/mail/mail.module';
+import { MongooseModule } from '@nestjs/mongoose';
+import {
+  mongoModuleOptions,
+  postgresModuleOptions,
+} from './config/database-module-options.config';
 
 /**
  * Root application module that wires feature modules and infrastructure.
@@ -54,7 +60,7 @@ const ENV_FILE_PATH = ENV ? `.env.${ENV}.local` : '.env';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ENV_FILE_PATH,
-      load: [databaseConfig, appConfig],
+      load: [databaseConfig, appConfig, mongooseConfig], // Load custom configuration providers
       validationSchema: environmentValidationSchema, // Add Joi validation schema here if needed
       validationOptions: {
         abortEarly: false, // Show all errors, not just first one
@@ -68,33 +74,15 @@ const ENV_FILE_PATH = ENV ? `.env.${ENV}.local` : '.env';
     MetaOptionsModule,
     PaginationModule,
     JwtModule.registerAsync(jwtConfig),
+    
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 60 seconds
         limit: 100, // 100 requests per window
       },
     ]),
-    // Asynchronously configures TypeORM using environment variables.
-    TypeOrmModule.forRootAsync({
-      inject: [ConfigService],
-      // Builds TypeORM options from environment variables.
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('database.host', 'localhost'),
-        port: +configService.get<string>('database.port', '5432'),
-        username: configService.get<string>('database.username', 'postgres'),
-        password: configService.get<string>('database.password', 'admin123'),
-        database: configService.get<string>(
-          'database.database',
-          'pip_learning_db',
-        ),
-        synchronize: configService.get<boolean>('database.synchronize', true),
-        autoLoadEntities: true,
-        // Keep the HTTP server bootable even when DB is unavailable.
-        // DB errors are handled in service methods at request time.
-        manualInitialization: true,
-      }),
-    }),
+    TypeOrmModule.forRootAsync(postgresModuleOptions),
+    MongooseModule.forRootAsync(mongoModuleOptions),
     UploadsModule,
     MailModule,
   ],

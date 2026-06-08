@@ -238,6 +238,32 @@ Capture the following fields every time:
 - httpyac's `file < ./path` sends raw binary body, not multipart — use full RFC boundary syntax for form uploads
 - Azure Blob Storage is a valid, fully functional substitute for AWS S3 in NestJS upload modules
 
+## 2026-06-08 - Mongoose URI Undefined Due To Wrong Config Key
+
+### Symptom
+- App startup logged: `Unable to connect to the database. Retrying...`
+- Mongoose threw: `The uri parameter to openUri() must be a string, got "undefined"`.
+
+### Root Cause
+- Mongo config in `src/config/database-module-options.config.ts` read `configService.get('mongoDb.uri')`.
+- `ConfigModule` namespaces this under `appConfig.mongoDb.uri`, while env var access is `MONGO_URI`.
+- Result: `uri` resolved to `undefined` at runtime.
+
+### Change Made
+- Updated `src/config/database-module-options.config.ts` Mongo options to resolve URI in this order:
+  - `MONGO_URI`
+  - `appConfig.mongoDb.uri`
+  - fallback `mongodb://localhost:27017/nestjs-blog`
+- Kept `dbName: 'nestjs-blog'` to avoid accidental default `test` DB usage.
+
+### Verification
+- TypeScript diagnostics show no errors in updated config file.
+- URI resolution path now always provides a string, preventing the `openUri()` undefined error.
+
+### Lesson/Topic Context
+- For namespaced config via `registerAs('appConfig', ...)`, use full dot path (`appConfig.*`) with `ConfigService.get`.
+- Prefer reading required env vars directly (`MONGO_URI`) for connection-critical values and keep explicit `dbName` when DB selection must be enforced.
+
 ## 2026-06-05 - Google Auth Endpoint Returned 201 Instead of 200 OK
 
 ### Symptom
@@ -1743,3 +1769,77 @@ Fixed dependency injection in:
 - Batch operations need explicit transaction/rollback tests; single-item tests can focus on happy-path + error branches.
 - External service mocks (MailerService, etc.) require `useValue: { method: jest.fn() }` pattern in TestingModule providers.
 - Coverage totals include **all** .ts files in collectCoverageFrom (including controllers, modules, untested services), so targeted module coverage is more meaningful than global percentage for learning validation.
+
+## 2026-06-08 - E2E DB Teardown Leak From Background Retry Timer
+
+### Symptom
+- Full `npm run test:e2e` runs intermittently failed with teardown-style errors such as Jest environment teardown/worker-exit instability after suites completed.
+
+### Root Cause
+- Database bootstrap used a background retry interval (`setInterval`) to reinitialize TypeORM when DB init fails.
+- In test lifecycle edge paths (failed bootstrap/early abort), that background behavior could outlive a suite and continue async work during teardown.
+- Running E2E suites in parallel increased DB reset contention (`dropDatabase`) and amplified teardown instability.
+
+### Change Made
+- Updated `src/database/database-connection.bootstrap.ts`:
+  - In `NODE_ENV=test`, bootstrap performs a single initialization attempt and **does not** start the background retry loop.
+- Updated `test/helpers/bootstrap-nest-app.helper.ts`:
+  - When DB initialization wait times out, explicitly calls `await app.close()` before throwing so no app-level handles are leaked.
+- Updated `package.json`:
+  - `test:e2e` now runs with `--runInBand` to serialize suites and avoid cross-suite DB reset collisions.
+
+### Verification
+- Re-ran `npm run test:e2e` and reviewed output.
+- Previous teardown signatures were no longer present in captured logs (no Jest teardown/worker graceful-exit leak messages).
+- Remaining failures were endpoint/test expectation issues (auth + posts payload flow), not teardown-handle leakage.
+
+### Lesson/Topic Context
+- Background recovery loops are useful in runtime apps but should be disabled or constrained in test mode.
+- In E2E helpers, always close partially initialized app instances before throwing.
+- For shared-state DB integration tests, serial execution is often the safest baseline; parallelism can be reintroduced only after strict isolation guarantees.
+
+## 2026-06-08 - Auth Guard Test Bypass Broke E2E Auth Boundary Coverage
+
+### Symptom
+- Protected E2E routes unexpectedly returned success instead of 401 when no token was provided.
+- Example failures: users PUT/PATCH/DELETE and create-many expected 401 but got 200/201.
+- Posts create flows also failed because `@ActiveUser()` was undefined, causing runtime errors (`Cannot read properties of undefined (reading 'email')`).
+
+### Root Cause
+- `AuthenticationGuard` contained an environment bypass:
+  - `if (process.env.NODE_ENV === 'test') return true;`
+- This disabled authentication globally during E2E runs, making protected endpoints public.
+
+### Change Made
+- Updated `src/modules/auth/guards/authentication.guard.ts`:
+  - Removed the `NODE_ENV === 'test'` early-return bypass.
+  - Guard now always follows route metadata (`@Auth(AuthType.None)` for public routes, Bearer by default otherwise).
+
+### Verification
+- `npm run test:e2e -- test/users/users.patch.e2e-spec.ts --forceExit` → 7/7 passing.
+- `npm run test:e2e -- test/posts/posts.post.e2e-spec.ts --forceExit` → 11/11 passing.
+- `npm run test:e2e -- test/users/users.put.e2e-spec.ts test/users/users.delete.e2e-spec.ts --forceExit` → both passing.
+
+### Lesson/Topic Context
+- For realistic E2E coverage, never globally bypass auth in test mode.
+- Keep auth behavior controlled by route metadata, not process environment shortcuts.
+
+## 2026-06-08 - E2E Hook Timeout Flakiness During App Bootstrap
+
+### Symptom
+- `users.create-many.e2e-spec.ts` intermittently failed in `beforeEach` with:
+  - `Exceeded timeout of 5000 ms for a hook`.
+
+### Root Cause
+- Default Jest per-test/hook timeout (5 seconds) was too low for occasional Nest app bootstrap + DB initialization latency in E2E runs.
+
+### Change Made
+- Updated `test/jest-e2e.json`:
+  - Added `"testTimeout": 30000` to provide a realistic timeout budget for E2E bootstrap hooks.
+
+### Verification
+- `npm run test:e2e -- test/users/users.create-many.e2e-spec.ts --forceExit` → 6/6 passing after timeout increase.
+
+### Lesson/Topic Context
+- E2E suites with real DB initialization need higher timeouts than unit tests.
+- Prefer explicit E2E timeout config over scattered per-test overrides.

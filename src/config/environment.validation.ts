@@ -32,4 +32,5 @@ export default Joi.object({
   SMTP_USERNAME: Joi.string().required(),
   SMTP_PASSWORD: Joi.string().required(),
   SMTP_PORT: Joi.number().default(587),
+  MONGO_URI: Joi.string().uri().required(),
 });

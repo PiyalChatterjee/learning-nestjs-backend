@@ -34,5 +34,5 @@ export default registerAs('appConfig', () => ({
     password: process.env.SMTP_PASSWORD,
     host: process.env.MAIL_HOST,
     port: parseInt(process.env.SMTP_PORT || '587', 10),
-  },
+  }
 }));

@@ -33,6 +33,7 @@ export async function bootstrapNestApp(
   }
 
   if (!dataSource.isInitialized) {
+    await app.close();
     throw new Error('Database failed to initialize within timeout period');
   }
 

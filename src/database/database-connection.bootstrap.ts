@@ -30,6 +30,12 @@ export class DatabaseConnectionBootstrap
    * Runs on module startup and performs initial connection attempt.
    */
   public async onModuleInit(): Promise<void> {
+    // In test runs we avoid background retry timers to prevent post-teardown async leaks.
+    if (process.env.NODE_ENV === 'test') {
+      await this.tryInitialize();
+      return;
+    }
+
     const isInitialized = await this.tryInitialize();
 
     if (!isInitialized) {
