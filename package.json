@@ -23,7 +23,10 @@
     "doc:watch": "compodoc -p tsconfig.json -d ./.compodoc -s --port 8080 --watch",
     "migration:generate": "typeorm migration:generate -d src/database/data-source.ts",
     "migration:run": "typeorm migration:run -d src/database/data-source.ts",
-    "migration:revert": "typeorm migration:revert -d src/database/data-source.ts"
+    "migration:revert": "typeorm migration:revert -d src/database/data-source.ts",
+    "migration:prod:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d typeorm-cli.config.ts",
+    "migration:prod:generate": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d typeorm-cli.config.ts",
+    "migration:prod:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d typeorm-cli.config.ts"
   },
   "dependencies": {
     "@azure/storage-blob": "^12.32.0",

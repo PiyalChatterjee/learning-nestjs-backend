@@ -119,3 +119,6 @@ dist
 
 # PIP workspace files
 pip.code-workspace
+
+# typeorm  cli config
+typeorm-cli.config.ts

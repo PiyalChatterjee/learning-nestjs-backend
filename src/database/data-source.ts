@@ -29,5 +29,4 @@ export const AppDataSource = new DataSource({
   migrations: ['src/database/migrations/**/*.ts'],
   synchronize: false,
   logging: false,
-  ssl: process.env.DB_HOST?.includes('neon') ? { rejectUnauthorized: false } : false,
 });
