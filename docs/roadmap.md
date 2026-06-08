@@ -4,7 +4,7 @@
 
 Build a course-aligned backend in small learning increments, with proof of implementation and a clear next-step backlog.
 
-## Current Snapshot (2026-06-07)
+## Current Snapshot (2026-06-08)
 
 - **Request Lifecycle Complete (Middleware omitted as optional):** All core NestJS request/response phases implemented—guards, interceptors, pipes, exception filters—with global registration in `AppModule` for consistency.
 - **Global Exception Filter implemented**: `HttpExceptionFilter` catches all exceptions at filter stage, formats responses with timestamp/path/message, and logs unhandled (non-HttpException) errors via injected `Logger`.
@@ -86,6 +86,18 @@ Build a course-aligned backend in small learning increments, with proof of imple
 	- Automatic asset copy during build: templates included in dist via `nest-cli.json` asset glob
 	- `sendWelcomeEmail()` triggered on user registration; generates HTML body from EJS template + plain-text fallback
 	- From address and template config managed via ConfigService for environment flexibility
+- **E2E test suite for users module complete** (2026-06-08):
+	- 48 total e2e tests across 7 endpoints (POST, GET list, GET by ID, PUT, PATCH, DELETE, POST create-many)
+	- **POST /v1/users** — 12 tests: creation, validation (required fields, email format, password strength), uniqueness constraints, success responses, password hashing, email dispatch, DB unavailability, request timeout, auth bypass (public endpoint)
+	- **GET /v1/users** — 6 tests: list retrieval, pagination (limit/page), auth enforcement, validation
+	- **GET /v1/users/:id** — 6 tests: single user retrieval, 404 not found, invalid id format, password field exclusion, auth enforcement
+	- **PUT /v1/users/:id** — 6 tests: full update, 409 duplicate email, 404 not found, validation errors, auth boundary
+	- **PATCH /v1/users/:id** — 8 tests: partial update (single fields), field isolation verification, 409 duplicate email, 404 not found, auth enforcement
+	- **DELETE /v1/users/:id** — 5 tests: deletion with 200 success, 404 not found, invalid id format, persistence verification, auth boundary
+	- **POST /v1/users/create-many** — 5 tests: batch creation, empty array handling, missing field validation, invalid user in batch, DB persistence verification
+	- Helper improvements: `getAuthToken()` now returns `{ accessToken, userPayload, createdUserId }` for test convenience
+	- All 48 tests passing; auth guard properly enforces Bearer token on protected endpoints; public endpoints (POST /users) bypass auth as intended
+	- Pattern reusable for remaining modules (posts, tags, etc.) for full API coverage
 
 ## Week-by-Week Status
 
@@ -223,6 +235,10 @@ Status: Complete (2026-06-07)
 
 Status: Complete (2026-06-07)
 
+## Week 12: E2E Test Coverage — Users Module
+
+Status: Complete (2026-06-08)
+
 - **Coverage raised from ~3% to 80%+ statements** (src/ files only, excluding untestable infra)
 - **41 test suites, 247 tests — all passing**
 - Scope and config fixes:
@@ -252,8 +268,8 @@ Status: Complete (2026-06-07)
 
 ## Immediate Next Priorities
 
-1. **E2E test coverage** for bulk endpoints (users, posts, tags): success cases, batch size limits, duplicate detection, transaction rollback on conflict.
-2. **Auth route audit and tests** — add focused tests to verify default Bearer guard behavior and explicit `@Auth(AuthType.None)` bypass only on intended public endpoints.
+1. **E2E test coverage for posts & tags modules** — extend the established users module pattern (real JWT tokens, auth boundary tests, validation, relationships, pagination, field isolation); verify many-to-many post-tag relationships and bulk operations with atomic transactions.
+2. **Auth route audit and E2E tests** — add focused tests to verify default Bearer guard behavior and explicit `@Auth(AuthType.None)` bypass only on intended public endpoints; test sign-in, token refresh, Google OAuth flow.
 3. **Migration strategy** — replace `synchronize: true` with explicit TypeORM migrations when ready.
 4. **Optional:** Docker exploration for containerized local development and deployment simulation.
 
@@ -286,3 +302,13 @@ Status: Complete (2026-06-07)
 | 2026-06-05 | Google OAuth API wrapper + config fixes | Implemented GoogleAuthenticationService as API wrapper for Google Auth Library with ID token verification, user lookup by googleId, and JWT token generation; added google-authentication endpoint at /v1/auth/google-authentication; fixed TypeORM synchronize config parsing; added explicit error handling for null-user and missing token payloads | src/modules/auth/social/providers/google-authentication.service.ts, src/modules/auth/social/google-authentication.controller.ts, src/modules/users/providers/find-one-by-google-id.provider.ts, src/modules/users/providers/users.service.ts, src/app.module.ts, src/config/app.config.ts, docs/learning-issues.md | 4 | Should auto-provision (create user on first Google login) be added? Should refresh-token be generated alongside access token in Google flow? |
 | 2026-06-06 | File upload module with Azure Blob + Front Door CDN | Replaced AWS upload flow with Azure Blob Storage module (single + multiple upload endpoints), persisted upload metadata in PostgreSQL, integrated Azure Front Door CDN URL generation with endpoint normalization/fallback guard, and validated via manual upload tests + Azure portal confirmation | src/modules/uploads/uploads.controller.ts, src/modules/uploads/providers/uploads.service.ts, src/modules/uploads/upload.entity.ts, src/config/app.config.ts, .env, .env.development.local, src/modules/uploads/http/*.http, docs/learning-issues.md | 5 | Add automated upload tests now or after finishing remaining Week 10 platform tasks? |
 | 2026-06-07 | Unit test coverage expansion | Raised coverage from ~3% to 80%+ statements across src/; 41 suites / 247 tests passing; fixed TypeScript errors in all spec files (IActiveUser shape, User entity fields, Tag entity date fields, PostStatus casing, DTO partial casts, IPaginated assertions); created new spec files for uploads.service, users.service (full), auth.service (full), sign-in.provider, bcrypt.provider, meta-options.service/controller, user-create-many.provider; updated jest collectCoverageFrom config to scope to src/ only | package.json (jest config), all *.spec.ts files in src/, docs/learning-issues.md | 5 | Remaining coverage gaps: guards, Azure upload provider (SDK integration), exception helper branches — candidates for integration/E2E tests |
+| 2026-06-08 | E2E test suite — users module | Created comprehensive e2e tests covering all 7 users endpoints (POST create, GET list, GET by ID, PUT, PATCH, DELETE, POST create-many) with 48 total tests (all passing); fixed auth token acquisition pattern by returning `createdUserId` from `getAuthToken()` helper; verified 401 auth boundaries, 404 not found, 409 duplicate email, validation errors, pagination, field isolation (PATCH), batch operations; removed `NODE_ENV === 'test'` bypass from AuthenticationGuard to enable real auth boundary testing; pattern is reusable for posts/tags modules | test/users/users.*.e2e-spec.ts (7 files), test/helpers/bootstrap-nest-app.helper.ts, docs/roadmap.md | 5 | E2E tests for posts, tags, and auth endpoints next? |
+| 2026-06-08 | E2E test suite — posts & tags modules | Extended E2E testing to both high-value modules: **posts** — 52 tests across 6 endpoints (POST create, POST create-many, GET list, GET by ID, PUT, PATCH, DELETE) all passing individually; verified author derivation from JWT token, tag resolution, metadata nesting, slug uniqueness (409 conflicts), pagination, status enum casing ('draft'/'published'), required fields (publishOn, tags); **tags** — 34 tests across 4 endpoints (POST create, POST create-many, GET list, GET by ID, DELETE) all passing individually; verified slug @IsUrl validation (full URL format required), pagination, soft delete persistence, atomic bulk operations; **key discovery:** Global `DataResponseInterceptor` wraps ALL responses in `{ apiVersion, data }`, paginated list responses have `response.body.data` with `{ meta, links, data: [items] }` structure, so tests must access items via `response.body.data.data` and metadata via `response.body.data.meta`; **batch validation behavior:** Duplicate slugs in batch validation return 400 (input validation), not 409 (DB constraint); **tags design decision:** Tags are immutable after creation (no PUT/PATCH endpoints), deleted unsupported test files | test/posts/posts.*.e2e-spec.ts (6 files, 52 tests), test/tags/tags.*.e2e-spec.ts (4 files, 34 tests); 86+ individual tests all passing; cascade full suite fails due to DB teardown | 5 | Fix test cascade DB cleanup sequencing? |
+
+## Immediate Next Priorities
+
+1. **Fix full E2E test cascade** � Individual test files pass 100% (86+ tests passing), but running full `npm run test:e2e` suite fails due to database teardown/cascade issues between test suites. Investigate `dropDatabase()` helper and test isolation; may need to adjust Jest workers or teardown sequencing.
+2. **Auth route audit and E2E tests** � add focused tests to verify default Bearer guard behavior and explicit `@Auth(AuthType.None)` bypass only on intended public endpoints; test sign-in, token refresh, Google OAuth flow.
+3. **File uploads E2E tests** � create tests for `POST /v1/uploads/file` and `POST /v1/uploads/files` endpoints with real file uploads and metadata persistence verification.
+4. **Migration strategy** � replace `synchronize: true` with explicit TypeORM migrations when ready.
+5. **Optional:** Docker exploration for containerized local development and deployment simulation.
