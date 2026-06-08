@@ -1,5 +1,43 @@
 # Weekly Course Check-In Template (NestJS)
 
+## Week 13 Summary (2026-06-08) — TUTORIAL COMPLETE ✅
+
+- What I completed:
+	- **Migration system set up:** TypeORM data-source configured; `InitialSchema` migration auto-generated from entities (User, Post, Tag, MetaOption) with relationships, constraints, and indexes.
+	- **Migrations tested locally:** Successfully applied to empty local PostgreSQL database.
+	- **SSL/TLS configured for Neon:** Updated data-source with conditional SSL config (`rejectUnauthorized: false` when connecting to Neon).
+	- **Neon PostgreSQL schema deployed:** Initial migration successfully applied to production Neon database; all 4 tables + junction table + enums created.
+	- **Production env file created:** `.env.production.local` set up with Neon credentials, JWT audience/issuer for production domain, and all required secrets.
+	- **Azure App Service configured:** Created in Central US region (Free F1 tier), startup command set to `node dist/main.js`, port configured to `8080`.
+	- **Build verified:** `npm run build` completes successfully with no errors.
+	- **Deployment path identified:** Azure App Service extension in VS Code ready; `dist/` and `node_modules/` prepared for zip deploy.
+- What I learned:
+	- TypeORM migration generation requires an **empty database** (TypeORM compares entities against live schema; no diff = no migration generated).
+	- Neon requires SSL connections (`sslmode=require`); connection string is `postgresql://user:pass@host/dbname?sslmode=require`.
+	- Azure Free F1 tier requires env vars set in Portal (CLI had network blocking); app goes to sleep after inactivity (cold start ~10-30s).
+	- Migration npm script (`npm run migration:run`) fails with TypeScript import errors; must use `ts-node` wrapper for CLI commands.
+	- `.env.production.local` files don't deploy to cloud; Azure App Service requires settings via Environment variables tab.
+- Where I got blocked:
+	- Azure CLI network access denied (corporate/ISP blocking `management.azure.com`).
+	- `npm run migration:run` couldn't resolve entity imports (fixed with `ts-node` wrapper).
+	- Neon required SSL flag (connection string parsing caught it; docs were clear).
+- How I resolved it:
+	- Manually set env vars in terminal for Neon migration instead of using dotenv-cli.
+	- Used `ts-node -r tsconfig-paths/register` wrapper for all TypeORM CLI commands.
+	- Confirmed Portal settings approach for Azure App Service config when CLI unavailable.
+- Next steps:
+	- Add app settings in Portal (PORT, NODE_ENV, DB_*, JWT_*, GOOGLE_*, AZURE_*, MAIL_*, MONGO_URI).
+	- Deploy via VS Code Azure App Service extension (right-click app → Deploy to Web App).
+	- Test endpoints at `https://nestjs-piyal-pip.azurewebsites.net` and confirm database connectivity.
+	- **Remember to delete the Azure resource tonight** to avoid charges.
+
+**Course Summary:**
+- **Completed:** All NestJS Masterclass core topics (users, posts, tags, auth, validation, exceptions, pagination, filtering, sorting, bulk ops, transactions, mail, file uploads, MongoDB, E2E testing, Swagger, rate limiting).
+- **Architecture:** Modular design with reusable guards, pipes, filters, interceptors, and helpers; centralized config; repository pattern for persistence; atomic transactions for bulk operations.
+- **Code Quality:** 80%+ unit test coverage, 134 E2E tests passing, JSDoc on all exports, TypeScript strict mode.
+- **DevOps:** Migrations ready, deployment path clear, environment config isolated per stage.
+- **Time to mastery:** Real-world NestJS patterns and decision-making solidified. Ready to extend with advanced topics or refactor for specific business requirements.
+
 ## Week 0 Summary (2026-05-18)
 
 - What I completed:

@@ -36,6 +36,9 @@ import { FindOneByGoogleIdProvider } from './find-one-by-google-id.provider';
 import { IGoogleUser } from '../interfaces/google-user.interface';
 import { CreateGoogleUserProvider } from './create-google-user.provider';
 import { throwIfUnauthorized } from '../../../common/exceptions/unauthorized.helper';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { User as UserMongo } from '../user.schema';
 
 /**
  * Internal representation of persisted user data.
@@ -100,6 +103,8 @@ export class UsersService {
     private readonly findOneUserByEmailProvider: FindOneUserByEmailProvider,
     private readonly findOneByGoogleIdProvider: FindOneByGoogleIdProvider,
     private readonly createGoogleUserProvider: CreateGoogleUserProvider,
+    @InjectModel(UserMongo.name)
+    private readonly userModel: Model<UserMongo>,
   ) {}
   // Service methods will go here, utilizing authService for authentication checks and userRepository for database operations.
 
@@ -107,7 +112,19 @@ export class UsersService {
    * Creates a new user record.
    */
   public async createUser(createUserDto: CreateUserDto): Promise<User> {
-    return this.createUserProvider.createUser(createUserDto);
+    const newUser = await this.createUserProvider.createUser(createUserDto);
+
+    await this.userModel.create({
+      sqlId: newUser.id,
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      email: newUser.email,
+      password: newUser.password,
+      googleId: newUser.googleId,
+      posts: [],
+    });
+
+    return newUser;
   }
 
   /**

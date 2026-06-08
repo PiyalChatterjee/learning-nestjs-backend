@@ -11,6 +11,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { PostsService } from './providers/posts.service';
+import { GetPostsMongodbProvider } from './providers/get-posts-mongodb.provider';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -36,8 +37,12 @@ export class PostsController {
   /**
    * Creates PostsController dependencies.
    * @param postsService - Service that handles post business operations.
+   * @param getPostsMongodbProvider - Provider for MongoDB post queries with population.
    */
-  constructor(private readonly postsService: PostsService) {}
+  constructor(
+    private readonly postsService: PostsService,
+    private readonly getPostsMongodbProvider: GetPostsMongodbProvider,
+  ) {}
 
   /**
    * Returns all posts from the database.
@@ -62,6 +67,24 @@ export class PostsController {
   })
   public getAllPosts(@Query() getPostsDto: GetPostsDto) {
     return this.postsService.getAllPosts(getPostsDto);
+  }
+
+  /**
+   * Returns all posts from MongoDB with fully populated details from SQL database.
+   */
+  @Get('mongodb/all')
+  @ApiOperation({
+    summary: 'Get all posts from MongoDB',
+    description:
+      'Fetch all posts from MongoDB with fully populated author, tags, and metaValue details',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Successfully retrieved all posts with populated details from MongoDB',
+  })
+  public getAllPostsFromMongodb() {
+    return this.getPostsMongodbProvider.getAllPostsWithPopulation();
   }
 
   /**

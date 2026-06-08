@@ -65,6 +65,7 @@ Content-Type: application/json
 ### Create minimal post with testing tag (John Doe) - use for PUT/PATCH testing
 POST http://localhost:8000/v1/posts
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obi5kb2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3ODA5Mzc2MzMsImV4cCI6MTc4MDk0MTIzMywiYXVkIjoibG9jYWxob3N0OjgwODAiLCJpc3MiOiJsb2NhbGhvc3Q6ODA4MCJ9.e7f63jExQpUE3gcM2-qU8nyd8MkwB-X4VdtLpDY7fQM
 
 {
   "title": "Test Post for Mutation Operations",

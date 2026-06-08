@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { Model } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
 import { validateEmail } from '../../../common/exceptions/bad-request.helper';
 import { throwIfUnexpectedError } from '../../../common/exceptions/internal-error.helper';
 import { assertResourceExists } from '../../../common/exceptions/not-found.helper';
@@ -12,6 +14,7 @@ import { User } from '../../users/user.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Post } from '../post.entity';
+import { Post as PostMongo } from '../post.schema';
 import { TagRelationValidator } from '../../../common/validators/tag-relation.validator';
 /**
  * Public-facing post shape returned from all read and write operations.
@@ -30,6 +33,7 @@ export class CreatePostProvider {
    * Creates CreatePostProvider dependencies.
    * @param userRepository - Repository used to resolve author by active-user email.
    * @param postRepository - Repository used to create and persist post entities.
+   * @param postModel - Mongoose model for persisting posts to MongoDB.
    * @param tagRelationValidator - Service for validating/resolving tag URLs to tag entities.
    */
   constructor(
@@ -37,7 +41,8 @@ export class CreatePostProvider {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
-
+    @InjectModel(PostMongo.name)
+    private readonly postModel: Model<PostMongo>,
     private readonly tagRelationValidator: TagRelationValidator,
   ) {}
 
@@ -70,16 +75,32 @@ export class CreatePostProvider {
       const postTags = await this.tagRelationValidator.resolveTagsOrThrow(tags);
 
       // create post with author relation and metaOption relationship
-      const post = this.postRepository.create({
+      const post: Post = this.postRepository.create({
         ...postData,
         tags: postTags,
         metaValue:
           (metaOption as unknown as typeof post.metaValue) ?? undefined,
+        author: author,
       });
-      post.author = author;
 
       // persist the post to the database
       await this.postRepository.save(post);
+
+      // persist the post to MongoDB
+      await this.postModel.create({
+        sqlId: post.id,
+        title: post.title,
+        postType: post.postType,
+        slug: post.slug,
+        status: post.status,
+        content: post.content ?? undefined,
+        postSchema: post.schema ?? undefined,
+        featuredImageUrl: post.featuredImageUrl ?? undefined,
+        publishOn: post.publishOn ?? undefined,
+        tags: postTags.map((tag) => tag.id),
+        metaValue: post.metaValue?.id ?? undefined,
+        author: post.author.id,
+      });
 
       // return formatted response with author details
       return formatPostWithAuthor(post);

@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { Model } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Tag } from '../tag.entity';
 import { Post } from '../../posts/post.entity';
+import { Tag as MongoTag } from '../tag.schema';
 import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 import { PostTagDto } from '../dtos/post-tag.dto';
 import { CreateManyTagsDto } from '../dtos/create-many-tags.dto';
@@ -35,6 +38,7 @@ export class TagsService {
    * Constructs a new instance of the TagsService.
    * @param tagRepository Repository for managing Tag entities.
    * @param postRepository Repository for managing Post entities.
+   * @param tagModel Mongoose model for persisting tags to MongoDB.
    * @param tagCreateManyProvider Provider for handling bulk tag creation.
    * @param paginationProvider Provider for handling pagination logic.
    */
@@ -43,6 +47,8 @@ export class TagsService {
     private readonly tagRepository: Repository<Tag>,
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
+    @InjectModel(MongoTag.name)
+    private readonly tagModel: Model<MongoTag>,
     private readonly tagCreateManyProvider: TagCreateManyProvider,
     private readonly paginationProvider: PaginationProvider,
   ) {}
@@ -58,6 +64,18 @@ export class TagsService {
        */
       const tag = this.tagRepository.create(postTagDto);
       await this.tagRepository.save(tag);
+
+      // persist the tag to MongoDB
+      await this.tagModel.create({
+        sqlId: tag.id,
+        name: tag.name,
+        slug: tag.slug,
+        description: tag.description ?? undefined,
+        tagSchema: tag.schema ?? undefined,
+        featureImageUrl: tag.featureImageUrl ?? undefined,
+        posts: [],
+      });
+
       return tag;
     } catch (error) {
       throwIfUniqueConstraintViolation(error, {

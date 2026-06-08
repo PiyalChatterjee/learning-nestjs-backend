@@ -11,6 +11,7 @@ import { MetaOption } from '../meta-options/meta-option.entity';
 import { TagRelationValidator } from '../../common/validators/tag-relation.validator';
 import { PaginationModule } from '../../common/paginations/pagination.module';
 import { CreatePostProvider } from './providers/create-post.provider';
+import { GetPostsMongodbProvider } from './providers/get-posts-mongodb.provider';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Post as PostMongo, PostSchema } from './post.schema';
 
@@ -24,6 +25,7 @@ import { Post as PostMongo, PostSchema } from './post.schema';
     PostCreateManyProvider,
     TagRelationValidator,
     CreatePostProvider,
+    GetPostsMongodbProvider,
   ],
   imports: [
     UsersModule,

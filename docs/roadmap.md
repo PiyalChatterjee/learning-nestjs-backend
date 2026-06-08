@@ -4,7 +4,11 @@
 
 Build a course-aligned backend in small learning increments, with proof of implementation and a clear next-step backlog.
 
-## Current Snapshot (2026-06-08)
+## Current Snapshot (2026-06-08) — BASIC TUTORIAL COMPLETE ✅
+
+**Milestone: NestJS Masterclass fundamentals fully implemented and ready for deployment.**
+
+All core CRUD/auth/validation/exception patterns practiced and refined. App boots without errors, builds to dist/, and schema migrates to production database (Neon PostgreSQL). Next learning track: advanced patterns (caching, websockets, queuing, performance optimization) or expand existing modules with business features.
 
 - **Request Lifecycle Complete (Middleware omitted as optional):** All core NestJS request/response phases implemented—guards, interceptors, pipes, exception filters—with global registration in `AppModule` for consistency.
 - **Global Exception Filter implemented**: `HttpExceptionFilter` catches all exceptions at filter stage, formats responses with timestamp/path/message, and logs unhandled (non-HttpException) errors via injected `Logger`.
@@ -266,12 +270,46 @@ Status: Complete (2026-06-08)
   - Partial DTO literals cast with `as CreatePostDto`, `as UpdatePostDto`, `as CreateManyPostsDto`
   - `result.page`/`result.limit` → `result.meta.currentPage`/`result.meta.itemsPerPage` per `IPaginated` interface
 
+## Week 13: MongoDB Integration — Hybrid Persistence Layer
+
+Status: In Progress (2026-06-08)
+
+- **MongoDB Schema Design for Posts** — Created post.schema.ts with MongoDB document structure:
+  - Embedded denormalized data: `PostAuthor`, `PostMetaValue`, `PostTag` classes with `@Prop` decorators
+  - References to SQL database: `author` (number), `tags` (number[]), `metaValue` (number) — stores only numeric IDs for cross-platform lookups
+  - Document structure mirrors SQL Post entity with field naming adjustments (`schema` → `postSchema`, Tag `schema` → `tagSchema`)
+- **Cross-Platform Post Creation** — Updated `CreatePostProvider` to persist posts to both databases atomically:
+  - SQL (source of truth): Full Post entity with author ownership, tag relations, metadata nesting via TypeORM
+  - MongoDB (read optimization): Post document with denormalized numeric IDs for author, tags, metaValue; uses `postModel.create()` for lightweight storage
+  - Tag resolution happens once (SQL), numeric IDs stored in MongoDB for fast joins
+- **MongoDB Query Provider with Population** — Created `GetPostsMongodbProvider` for hybrid querying:
+  - Fetches posts from MongoDB (lightweight storage)
+  - Joins with SQL database to populate author, tags, metaValue full details (single source of truth)
+  - Returns fully populated response matching PostgreSQL API format with all details inline
+  - Private `populatePostDetails()` method handles cross-platform joins: UserRepository, TagRepository, MetaOptionRepository queries
+  - JSON parsing for metaValue: stored as string in MetaOption entity, parsed to object in response
+- **Authenticated MongoDB Endpoint** — Added `GET /v1/posts/mongodb/all` route:
+  - Requires Bearer token authentication (inherits global `@ApiBearerAuth`)
+  - Uses `GetPostsMongodbProvider.getAllPostsWithPopulation()` 
+  - Returns posts with full author, tags, metaValue details populated from SQL
+  - Follows same response envelope format as PostgreSQL endpoint
+- **TypeScript Type Safety** — Resolved schema type mismatches:
+  - Changed `tags: Tag[]` → `tags: number[]`, `author: User` → `author: number`, `metaValue: MetaOption` → `metaValue: number`
+  - Mongoose model now accepts numeric IDs matching SQL database primary keys
+  - Provider handles type conversions during population (numeric ID → full entity details)
+- **Architecture Pattern** — Clear separation of concerns:
+  - MongoDB stores lightweight denormalized posts with numeric IDs (no Tag/User/MetaOption docs in MongoDB)
+  - SQL remains single source of truth for all entity definitions
+  - Provider bridges databases: queries MongoDB, enriches with SQL data in application layer
+  - Eliminates data duplication across platforms while optimizing read performance
+
 ## Immediate Next Priorities
 
-1. **E2E test coverage for posts & tags modules** — extend the established users module pattern (real JWT tokens, auth boundary tests, validation, relationships, pagination, field isolation); verify many-to-many post-tag relationships and bulk operations with atomic transactions.
-2. **Auth route audit and E2E tests** — add focused tests to verify default Bearer guard behavior and explicit `@Auth(AuthType.None)` bypass only on intended public endpoints; test sign-in, token refresh, Google OAuth flow.
-3. **Migration strategy** — replace `synchronize: true` with explicit TypeORM migrations when ready.
-4. **Optional:** Docker exploration for containerized local development and deployment simulation.
+1. **E2E tests for MongoDB endpoints** — Verify `GET /v1/posts/mongodb/all` returns fully populated posts with author, tags, metaValue details from cross-platform join.
+2. **MongoDB query filtering & pagination** — Add support for filters, sorting, and pagination on MongoDB queries (similar to PostgreSQL endpoints).
+3. **Auth route audit and E2E tests** — add focused tests to verify default Bearer guard behavior and explicit `@Auth(AuthType.None)` bypass only on intended public endpoints; test sign-in, token refresh, Google OAuth flow.
+4. **Migration strategy** — replace `synchronize: true` with explicit TypeORM migrations when ready.
+5. **Optional:** Docker exploration for containerized local development and deployment simulation.
 
 ## Continuous Tracking Rules
 
@@ -304,6 +342,7 @@ Status: Complete (2026-06-08)
 | 2026-06-07 | Unit test coverage expansion | Raised coverage from ~3% to 80%+ statements across src/; 41 suites / 247 tests passing; fixed TypeScript errors in all spec files (IActiveUser shape, User entity fields, Tag entity date fields, PostStatus casing, DTO partial casts, IPaginated assertions); created new spec files for uploads.service, users.service (full), auth.service (full), sign-in.provider, bcrypt.provider, meta-options.service/controller, user-create-many.provider; updated jest collectCoverageFrom config to scope to src/ only | package.json (jest config), all *.spec.ts files in src/, docs/learning-issues.md | 5 | Remaining coverage gaps: guards, Azure upload provider (SDK integration), exception helper branches — candidates for integration/E2E tests |
 | 2026-06-08 | E2E test suite — users module | Created comprehensive e2e tests covering all 7 users endpoints (POST create, GET list, GET by ID, PUT, PATCH, DELETE, POST create-many) with 48 total tests (all passing); fixed auth token acquisition pattern by returning `createdUserId` from `getAuthToken()` helper; verified 401 auth boundaries, 404 not found, 409 duplicate email, validation errors, pagination, field isolation (PATCH), batch operations; removed `NODE_ENV === 'test'` bypass from AuthenticationGuard to enable real auth boundary testing; pattern is reusable for posts/tags modules | test/users/users.*.e2e-spec.ts (7 files), test/helpers/bootstrap-nest-app.helper.ts, docs/roadmap.md | 5 | E2E tests for posts, tags, and auth endpoints next? |
 | 2026-06-08 | E2E test suite — posts & tags modules | Extended E2E testing to both high-value modules: **posts** — 52 tests across 6 endpoints (POST create, POST create-many, GET list, GET by ID, PUT, PATCH, DELETE) all passing individually; verified author derivation from JWT token, tag resolution, metadata nesting, slug uniqueness (409 conflicts), pagination, status enum casing ('draft'/'published'), required fields (publishOn, tags); **tags** — 34 tests across 4 endpoints (POST create, POST create-many, GET list, GET by ID, DELETE) all passing individually; verified slug @IsUrl validation (full URL format required), pagination, soft delete persistence, atomic bulk operations; **key discovery:** Global `DataResponseInterceptor` wraps ALL responses in `{ apiVersion, data }`, paginated list responses have `response.body.data` with `{ meta, links, data: [items] }` structure, so tests must access items via `response.body.data.data` and metadata via `response.body.data.meta`; **batch validation behavior:** Duplicate slugs in batch validation return 400 (input validation), not 409 (DB constraint); **tags design decision:** Tags are immutable after creation (no PUT/PATCH endpoints), deleted unsupported test files | test/posts/posts.*.e2e-spec.ts (6 files, 52 tests), test/tags/tags.*.e2e-spec.ts (4 files, 34 tests); 86+ individual tests all passing; cascade full suite fails due to DB teardown | 5 | Fix test cascade DB cleanup sequencing? |
+| 2026-06-08 | MongoDB hybrid persistence & cross-platform joins | Implemented post.schema.ts with MongoDB document model storing denormalized posts with numeric IDs for author/tags/metaValue (references to SQL database); CreatePostProvider now persists to both SQL (source of truth) and MongoDB (read-optimized) atomically; GetPostsMongodbProvider queries MongoDB + joins with SQL repositories to populate full author/tags/metaValue details in application layer; added authenticated GET /v1/posts/mongodb/all endpoint returning fully populated responses matching PostgreSQL API format | src/modules/posts/post.schema.ts, src/modules/posts/providers/create-post.provider.ts, src/modules/posts/providers/get-posts-mongodb.provider.ts, src/modules/posts/posts.controller.ts, src/modules/posts/posts.module.ts, docs/roadmap.md | 5 | Add filtering/sorting/pagination support to MongoDB query endpoints? Extend to other high-value collections (users, tags)? |
 
 ## Immediate Next Priorities
 
