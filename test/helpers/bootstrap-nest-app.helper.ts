@@ -5,6 +5,7 @@ import { AppModule } from '../../src/app.module';
 import { MailService } from '../../src/modules/mail/providers/mail.service';
 import request from 'supertest';
 import { validUserPayload } from '../users/users.post.e2e-spec.sample-data';
+import { DataSource } from 'typeorm';
 
 export async function bootstrapNestApp(
   app: INestApplication,
@@ -21,6 +22,20 @@ export async function bootstrapNestApp(
   app = moduleFixture.createNestApplication();
   createApp(app); // Apply global settings and Swagger configuration
   await app.init();
+
+  // Wait for database to be initialized (DatabaseConnectionBootstrap)
+  const dataSource = app.get<DataSource>(DataSource);
+  let retries = 0;
+  const maxRetries = 30; // 30 * 100ms = 3 seconds
+  while (!dataSource.isInitialized && retries < maxRetries) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    retries++;
+  }
+
+  if (!dataSource.isInitialized) {
+    throw new Error('Database failed to initialize within timeout period');
+  }
+
   return app;
 }
 

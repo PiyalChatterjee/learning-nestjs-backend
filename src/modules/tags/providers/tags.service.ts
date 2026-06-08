@@ -7,6 +7,7 @@ import { PostTagDto } from '../dtos/post-tag.dto';
 import { CreateManyTagsDto } from '../dtos/create-many-tags.dto';
 import { TagCreateManyProvider } from './tag-create-many.provider';
 import { assertResourceExists } from '../../../common/exceptions/not-found.helper';
+import { throwIfUniqueConstraintViolation } from '../../../common/exceptions/unique-constraint.helper';
 import { throwIfRequestTimeout } from '../../../common/exceptions/request-timeout.helper';
 import { throwIfServiceUnavailable } from '../../../common/exceptions/service-unavailable.helper';
 import { throwIfUnexpectedError } from '../../../common/exceptions/internal-error.helper';
@@ -59,6 +60,9 @@ export class TagsService {
       await this.tagRepository.save(tag);
       return tag;
     } catch (error) {
+      throwIfUniqueConstraintViolation(error, {
+        message: 'A tag with this name or slug already exists',
+      });
       throwIfServiceUnavailable(error, {
         message: 'Cannot create tag at this moment',
         serviceName: 'database',
